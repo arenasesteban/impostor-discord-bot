@@ -81,7 +81,7 @@ class Session:
         
         return roles
     
-    def cancel_game(self) -> None:
+    def cancel(self) -> None:
         if self.status == STATUS_STARTED:
             raise GameAlreadyStartedError("Cannot cancel a game that has already started.")
         
