@@ -16,3 +16,7 @@ class HostCannotLeaveError(GameError):
 
 class PlayerNotFoundError(GameError):
     """Raised when a player is not found in the game session."""
+
+
+class NotEnoughPlayersError(GameError):
+    """Raised when there are not enough players to start the game."""

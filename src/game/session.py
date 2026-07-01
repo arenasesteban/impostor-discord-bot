@@ -75,7 +75,7 @@ class Session:
 
         for player_id in self.players:
             if player_id == self.impostor_id:
-                roles[player_id] = "impostor"
+                roles[player_id] = "IMPOSTOR"
             else:
                 roles[player_id] = self.secret_word
         

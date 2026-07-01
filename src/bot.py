@@ -5,11 +5,13 @@ from config import DISCORD_TOKEN
 from game.session import Session
 from game.exceptions import (
     GameError,
-    GameAlreadyStartedError, 
     PlayerAlreadyJoinedError,
-    HostCannotLeaveError,
-    PlayerNotFoundError
+    PlayerNotFoundError,
+    GameAlreadyStartedError, 
+    NotEnoughPlayersError,
+    HostCannotLeaveError
 )
+from words import get_random_word, WordError
 
 
 class ImpostorBot(discord.Client):
@@ -41,6 +43,24 @@ def get_channel_id(interaction: discord.Interaction) -> int:
         raise GameError("This command can only be used in a server channel.")
     
     return interaction.channel.id
+
+
+async def send_normal_player_dm(user: discord.User | discord.Member, secret_word: str) -> None:
+    await user.send(
+        f"**🎭 Impostor Game Started!**\n\n"
+        f"Your secret word is:\n\n"
+        f"**{secret_word}**\n"
+        "Try to describe this word without revealing it directly. Good luck!"
+    )
+
+
+async def send_impostor_dm(user: discord.User | discord.Member, secret_word: str) -> None:
+    await user.send(
+        f"**🎭 Impostor Game Started!**\n\n"
+        "You are the **Impostor**!\n"
+        "You don't know the secret word.\n\n"
+        "Try to go unnoticed by listening carefully to the descriptions from other players."
+    )
 
 
 impostor_group = app_commands.Group(
@@ -251,6 +271,83 @@ async def cancel(interaction: discord.Interaction):
     except GameError as error:
         await interaction.response.send_message(
             f"[ERROR] {error}",
+            ephemeral=True
+        )
+
+
+@impostor_group.command(
+    name="start",
+    description="Start the Impostor game session in the current channel."
+)
+async def start(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True, thinking=True)
+
+    try:
+        channel_id = get_channel_id(interaction)
+        user_id = interaction.user.id
+
+        game = active_sessions.get(channel_id)
+
+        if game is None:
+            await interaction.followup.send(
+                "No active game session found in this channel.",
+                ephemeral=True
+            )
+            return
+
+        if user_id != game.host_id:
+            await interaction.followup.send(
+                "Only the host can start the game session.",
+                ephemeral=True
+            )
+            return
+
+        secret_word = get_random_word()
+        roles = game.start_game(secret_word)
+
+        failed_players: list[int] = []
+
+        for player_id, role in roles.items():
+            user = await interaction.client.fetch_user(player_id)
+
+            try:
+                if role == "IMPOSTOR":
+                    await send_impostor_dm(user, secret_word)
+                else:
+                    await send_normal_player_dm(user, secret_word)
+
+            except discord.Forbidden:
+                failed_players.append(player_id)
+
+        if failed_players:
+            failed_list = "\n".join(f"- <@{player_id}>" for player_id in failed_players)
+
+            await interaction.followup.send(
+                "**I couldn't send a private message to one or more players:**\n\n"
+                f"{failed_list}\n\n"
+                "They may have disabled private messages.\n"
+                "Please enable private messages and try creating a new game."
+            )
+
+            del active_sessions[channel_id]
+            return
+        
+        del active_sessions[channel_id]
+
+
+        await interaction.followup.send(
+            "**🎲 Impostor game session has been started!**"
+        )
+
+    except NotEnoughPlayersError:
+        await interaction.followup.send(
+            "Not enough players to start the game. At least 3 players are required.",
+            ephemeral=True
+        )
+
+    except WordError as error:
+        await interaction.followup.send(
+            f"{error}",
             ephemeral=True
         )
 
