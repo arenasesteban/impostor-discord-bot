@@ -1,0 +1,55 @@
+{
+  "general": [
+    "pizza",
+    "playa",
+    "perro",
+    "hospital",
+    "avión",
+    "colegio",
+    "montaña",
+    "cine",
+    "fútbol",
+    "celular",
+    "supermercado",
+    "doctor",
+    "restaurante",
+    "bicicleta",
+    "computador"
+  ],
+  "comida": [
+    "pizza",
+    "sushi",
+    "hamburguesa",
+    "empanada",
+    "tallarines",
+    "helado",
+    "pan",
+    "ensalada",
+    "completo",
+    "pastel"
+  ],
+  "lugares": [
+    "playa",
+    "hospital",
+    "colegio",
+    "supermercado",
+    "cine",
+    "parque",
+    "restaurante",
+    "biblioteca",
+    "estadio",
+    "aeropuerto"
+  ],
+  "objetos": [
+    "celular",
+    "mochila",
+    "bicicleta",
+    "computador",
+    "lápiz",
+    "silla",
+    "botella",
+    "reloj",
+    "llaves",
+    "audífonos"
+  ]
+}
