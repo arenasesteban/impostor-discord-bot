@@ -1,5 +1,5 @@
 from impostor_bot.config import DISCORD_TOKEN
-from impostor_bot.bot.client import create_bot
+from impostor_bot.discord.client import create_bot
 
 
 def main() -> None:

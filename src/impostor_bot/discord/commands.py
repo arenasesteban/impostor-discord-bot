@@ -3,7 +3,7 @@ from discord import app_commands
 
 
 from impostor_bot.constants import IMPOSTOR_ROLE
-from impostor_bot.bot.messages import (
+from impostor_bot.discord.messages import (
     build_dm_error_message,
     build_game_cancelled_message,
     build_game_created_message,
@@ -16,7 +16,9 @@ from impostor_bot.bot.messages import (
     send_impostor_dm,
     send_normal_player_dm,
 )
-from impostor_bot.bot.state import active_games
+from impostor_bot.discord.state import active_games
+from impostor_bot.discord.views import LobbyView
+from impostor_bot.constants import IMPOSTOR_ROLE
 from impostor_bot.game.exceptions import (
     GameAlreadyStartedError,
     GameError,
@@ -64,8 +66,11 @@ async def create(interaction: discord.Interaction):
         game = Session(host_id=host_id)
         active_games[channel_id] = game
 
+        view = LobbyView(channel_id=channel_id)
+
         await interaction.response.send_message(
-            build_game_created_message(host_id)
+            content=build_game_created_message(host_id),
+            view=view
         )
 
     except GameError as error:

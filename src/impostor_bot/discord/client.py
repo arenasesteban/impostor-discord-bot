@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 
-from impostor_bot.bot.commands import impostor_group
+from impostor_bot.discord.commands import impostor_group
 
 
 class ImpostorBot(discord.Client):
