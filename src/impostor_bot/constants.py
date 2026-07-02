@@ -1,0 +1,11 @@
+EMOJI_GAME = "🎭"
+EMOJI_SUCCESS = "✅"
+EMOJI_WARNING = "⚠️"
+EMOJI_ERROR = "❌"
+EMOJI_DOOR = "🚪"
+EMOJI_DICE = "🎲"
+EMOJI_INFO = "ℹ️"
+EMOJI_LIST = "📋"
+
+
+IMPOSTOR_ROLE = "Impostor"

@@ -2,28 +2,17 @@ import json
 import random
 from pathlib import Path
 
+from .exceptions import (
+    WordsFileNotFoundError,
+    EmptyWordsFileError,
+    CategoryNotFoundError,
+    EmptyCategoryError
+)
+
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 WORDS_FILE = BASE_DIR / "data" / "words.json"
-DEFAULT_CATEGORY = "general"
-
-class WordError(Exception):
-    """Base class for word-related errors."""
-
-
-class WordsFileNotFoundError(WordError):
-    """Raised when file is not found."""
-
-
-class EmptyWordsFileError(WordError):
-    """Raised when file is empty or contains invalid data."""
-
-
-class CategoryNotFoundError(WordError):
-    """Raised when the specified category doesn't exist."""
-
-
-class EmptyCategoryError(WordError):
-    """Raised when the specified category exists but is empty."""
+DEFAULT_WORD_CATEGORY  = "general"
 
 
 def load_words() -> dict[str, list[str]]:
@@ -43,7 +32,7 @@ def load_words() -> dict[str, list[str]]:
     return data
 
 
-def get_words_by_category(category: str = DEFAULT_CATEGORY) -> list[str]:
+def get_words_by_category(category: str = DEFAULT_WORD_CATEGORY) -> list[str]:
     words_data = load_words()
 
     if category not in words_data:
@@ -61,6 +50,6 @@ def get_words_by_category(category: str = DEFAULT_CATEGORY) -> list[str]:
     return words
 
 
-def get_random_word(category: str = DEFAULT_CATEGORY) -> str:
+def get_random_word(category: str = DEFAULT_WORD_CATEGORY) -> str:
     words = get_words_by_category(category)
     return random.choice(words)
