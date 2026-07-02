@@ -1,13 +1,14 @@
 import discord
 
 from impostor_bot.constants import (
+    EMOJI_DICE,
+    EMOJI_DOOR,
+    EMOJI_ERROR,
     EMOJI_GAME,
+    EMOJI_LIST,
+    EMOJI_LOCK,
     EMOJI_SUCCESS,
     EMOJI_WARNING,
-    EMOJI_ERROR,
-    EMOJI_DOOR,
-    EMOJI_DICE,
-    EMOJI_LIST
 )
 from impostor_bot.game.session import Session
 
@@ -15,19 +16,44 @@ from impostor_bot.game.session import Session
 def format_player_list(player_ids: list[int]) -> str:
     if not player_ids:
         return "No players have joined yet."
-    
+
     return "\n".join(
-        f"{index + 1}. <@{player_id}>" 
+        f"{index}. <@{player_id}>"
         for index, player_id in enumerate(player_ids, start=1)
     )
 
 
-def build_game_created_message(host_id: int) -> str:
+def build_game_created_message(game: Session) -> str:
     return (
-       f"🎭 **The Impostor Game Has Been Created!**\n\n"
-        f"Host: <@{host_id}>\n\n"
-        "Players can join the game using the `/impostor join` command.\n"
-        "The host can start the game using the `/impostor start` command."
+        f"{EMOJI_GAME} **Impostor game lobby**\n\n"
+        f"**Status:** Open\n"
+        f"**Host:** <@{game.host_id}>\n"
+        f"**Players joined:** {len(game.players)}\n\n"
+        "**Players:**\n"
+        "Use **Join** to enter the game or **Leave** to exit before it starts.\n\n"
+        "**Host commands:**\n"
+        "`/impostor start` — Start the game.\n"
+        "`/impostor cancel` — Cancel the lobby.\n"
+    )
+
+
+def build_lobby_started_message(game: Session) -> str:
+    return (
+        f"{EMOJI_DICE} **The Impostor Game Has Started!**\n\n"
+        f"**Status:** Started\n"
+        f"**Host:** <@{game.host_id}>\n"
+        f"**Players:** {len(game.players)}\n\n"
+        f"{EMOJI_LOCK} This lobby is now closed.\n"
+        "The secret roles were sent by direct message."
+    )
+
+
+def build_lobby_cancelled_message(game: Session) -> str:
+    return (
+        f"{EMOJI_ERROR} **The Impostor Game Was Cancelled!**\n\n"
+        f"**Status:** Cancelled\n"
+        f"**Host:** <@{game.host_id}>\n\n"
+        f"{EMOJI_LOCK} This lobby is now closed."
     )
 
 

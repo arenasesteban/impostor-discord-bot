@@ -2,6 +2,7 @@ import json
 import random
 from pathlib import Path
 
+from impostor_bot.constants import DEFAULT_WORD_CATEGORY
 from .exceptions import (
     WordsFileNotFoundError,
     EmptyWordsFileError,
@@ -10,9 +11,8 @@ from .exceptions import (
 )
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-WORDS_FILE = BASE_DIR / "data" / "words.json"
-DEFAULT_WORD_CATEGORY  = "general"
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+WORDS_FILE = PROJECT_ROOT / "data" / "words.json"
 
 
 def load_words() -> dict[str, list[str]]:

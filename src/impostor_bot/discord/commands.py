@@ -1,33 +1,39 @@
 import discord
 from discord import app_commands
 
-
 from impostor_bot.constants import IMPOSTOR_ROLE
+from impostor_bot.discord.lobby import (
+    close_lobby_message,
+    join_lobby,
+    leave_lobby,
+    refresh_lobby_message,
+)
 from impostor_bot.discord.messages import (
-    build_dm_error_message,
-    build_game_cancelled_message,
     build_game_created_message,
-    build_game_started_message,
     build_game_status_message,
-    build_help_message,
+    build_game_cancelled_message,
+    build_game_started_message,
     build_player_joined_message,
     build_player_left_message,
+    build_lobby_cancelled_message,
+    build_lobby_started_message,
+    build_dm_error_message,
+    build_help_message,
     send_error,
     send_impostor_dm,
     send_normal_player_dm,
 )
-from impostor_bot.discord.state import active_games
+from impostor_bot.discord.state import active_games, active_lobby_messages
 from impostor_bot.discord.views import LobbyView
-from impostor_bot.constants import IMPOSTOR_ROLE
+from impostor_bot.game.session import Session
 from impostor_bot.game.exceptions import (
     GameAlreadyStartedError,
     GameError,
     HostCannotLeaveError,
-    NotEnoughPlayersError,
     PlayerAlreadyJoinedError,
     PlayerNotFoundError,
+    NotEnoughPlayersError,
 )
-from impostor_bot.game.session import Session
 from impostor_bot.words.exceptions import WordError
 from impostor_bot.words.loader import get_random_word
 
@@ -51,7 +57,6 @@ def get_channel_id(interaction: discord.Interaction) -> int:
 )
 async def create(interaction: discord.Interaction):
     try:
-
         channel_id = get_channel_id(interaction)
         host_id = interaction.user.id
 
@@ -59,25 +64,23 @@ async def create(interaction: discord.Interaction):
             await send_error(
                 interaction,
                 "There is already an open game in this channel. "
-                "Use `/impostor estado` to check it.",
+                "Use `/impostor status` to check it.",
             )
             return
 
         game = Session(host_id=host_id)
         active_games[channel_id] = game
 
-        view = LobbyView(channel_id=channel_id)
-
         await interaction.response.send_message(
-            content=build_game_created_message(host_id),
-            view=view
+            content=build_game_created_message(game),
+            view=LobbyView(channel_id=channel_id),
         )
+
+        message = await interaction.original_response()
+        active_lobby_messages[channel_id] = message.id
 
     except GameError as error:
-        await interaction.response.send_message(
-            f"[ERROR] {error}",
-            ephemeral=True
-        )
+        await send_error(interaction, str(error))
 
 
 @impostor_group.command( 
@@ -89,20 +92,20 @@ async def join(interaction: discord.Interaction):
         channel_id = get_channel_id(interaction)
         player_id = interaction.user.id
 
-        game = active_games.get(channel_id)
+        game = join_lobby(
+            channel_id=channel_id,
+            player_id=player_id,
+        )
 
-        if game is None:
-            await send_error(
-                interaction,
-                "There is no open game in this channel. "
-                "Use `/impostor crear` to create one.",
-            )
-            return
-        
-        game.add_player(player_id)
+        await refresh_lobby_message(
+            client=interaction.client,
+            channel_id=channel_id,
+            view=LobbyView(channel_id=channel_id),
+        )
 
         await interaction.response.send_message(
-            build_player_joined_message(player_id, len(game.players))
+            build_player_joined_message(player_id, len(game.players)),
+            ephemeral=True,
         )
 
     except PlayerAlreadyJoinedError:
@@ -131,19 +134,20 @@ async def leave(interaction: discord.Interaction):
         channel_id = get_channel_id(interaction)
         player_id = interaction.user.id
 
-        game = active_games.get(channel_id)
+        game = leave_lobby(
+            channel_id=channel_id,
+            player_id=player_id,
+        )
 
-        if game is None:
-            await send_error(
-                interaction,
-                "There is no open game in this channel.",
-            )
-            return
-
-        game.remove_player(player_id)
+        await refresh_lobby_message(
+            client=interaction.client,
+            channel_id=channel_id,
+            view=LobbyView(channel_id=channel_id),
+        )
 
         await interaction.response.send_message(
-            build_player_left_message(player_id, len(game.players))
+            build_player_left_message(player_id, len(game.players)),
+            ephemeral=True,
         )
 
     except HostCannotLeaveError:
@@ -169,6 +173,10 @@ async def leave(interaction: discord.Interaction):
         await send_error(interaction, str(error))
 
 
+@impostor_group.command(
+    name="status",
+    description="Shows the current game status.",
+)
 async def status(interaction: discord.Interaction):
     try:
         channel_id = get_channel_id(interaction)
@@ -178,12 +186,13 @@ async def status(interaction: discord.Interaction):
             await send_error(
                 interaction,
                 "There is no open game in this channel. "
-                "Use `/impostor crear` to create one.",
+                "Use `/impostor create` to create one.",
             )
             return
-        
+
         await interaction.response.send_message(
-            build_game_status_message(game)
+            build_game_status_message(game),
+            ephemeral=True
         )
 
     except GameError as error:
@@ -216,10 +225,21 @@ async def cancel(interaction: discord.Interaction):
             return
 
         game.cancel()
+
+        closed_lobby_view = LobbyView(channel_id=channel_id, disabled=True)
+
+        await close_lobby_message(
+            client=interaction.client,
+            channel_id=channel_id,
+            content=build_lobby_cancelled_message(game),
+            view=closed_lobby_view,
+        )
+
         del active_games[channel_id]
 
         await interaction.response.send_message(
-            build_game_cancelled_message()
+            build_game_cancelled_message(),
+            ephemeral=False,
         )
 
     except GameAlreadyStartedError:
@@ -232,9 +252,10 @@ async def cancel(interaction: discord.Interaction):
         await send_error(interaction, str(error))
 
 
+
 @impostor_group.command(
     name="start",
-    description="Start the Impostor game in the current channel."
+    description="Starts the game and sends secret roles by direct message.",
 )
 async def start(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True, thinking=True)
@@ -276,18 +297,36 @@ async def start(interaction: discord.Interaction):
             except discord.Forbidden:
                 failed_players.append(player_id)
 
+        closed_lobby_view = LobbyView(channel_id=channel_id, disabled=True)
+
         if failed_players:
+            await close_lobby_message(
+                client=interaction.client,
+                channel_id=channel_id,
+                content=build_lobby_cancelled_message(game),
+                view=closed_lobby_view,
+            )
+
             await interaction.response.send_message(
-                build_dm_error_message(failed_players)
+                build_dm_error_message(failed_players),
+                ephemeral=True,
             )
 
             del active_games[channel_id]
             return
-        
+
+        await close_lobby_message(
+            client=interaction.client,
+            channel_id=channel_id,
+            content=build_lobby_started_message(game),
+            view=closed_lobby_view,
+        )
+
         del active_games[channel_id]
 
-        await interaction.response.send_message(
-            build_game_started_message()
+        await interaction.followup.send(
+            build_game_started_message(),
+            ephemeral=False,
         )
 
     except NotEnoughPlayersError:
@@ -314,7 +353,7 @@ async def start(interaction: discord.Interaction):
     name="help",
     description="Shows help about how to use the bot.",
 )
-async def help(interaction: discord.Interaction):
+async def help_command(interaction: discord.Interaction):
     await interaction.response.send_message(
         build_help_message(),
         ephemeral=True,
