@@ -2,8 +2,6 @@
 
 This document summarizes the internal rules used by **Impostor Discord Bot** to manage a game.
 
----
-
 ## General Principle
 
 The bot only manages the initial stage of a **The Impostor** game.
@@ -11,8 +9,6 @@ The bot only manages the initial stage of a **The Impostor** game.
 Its responsibility is to create the lobby, register players, select a secret word, choose one impostor, send the roles by direct message, and close the lobby when the game starts or is cancelled.
 
 The bot does not control the round, voting, scoring, or winner declaration.
-
----
 
 ## Game States
 
@@ -24,8 +20,6 @@ The bot does not control the round, voting, scoring, or winner declaration.
 
 Active games are stored temporarily in memory. If the bot restarts, active games are lost.
 
----
-
 ## Main Rules
 
 | Area    | Rules                                                                                                                                                                                          |
@@ -36,8 +30,6 @@ Active games are stored temporarily in memory. If the bot restarts, active games
 | Start   | To start the game, an open game must exist, the user must be the host, there must be at least 3 players, and a secret word must be available.                                                  |
 | Roles   | Only one impostor is selected randomly. Regular players receive the secret word. The impostor does not receive the word. Each player receives exactly one role.                                |
 | Memory  | The bot stores active games and lobby messages temporarily in memory. It does not store history, scores, or statistics.                                                                        |
-
----
 
 ## Lobby and Buttons
 
@@ -57,8 +49,6 @@ Join | Leave
 Buttons are visible to all users in the channel.
 
 Discord does not allow disabling buttons in a public message for specific users. For this reason, invalid actions are handled through internal validations and responses visible only to the user who interacts with the button.
-
----
 
 ## Starting a Game
 
@@ -82,8 +72,6 @@ the bot follows this flow:
 10. disables the buttons;
 11. removes the active game from memory.
 
----
-
 ## Secret Information
 
 The bot must never publicly show:
@@ -99,8 +87,6 @@ This information is only delivered through direct messages.
 | Impostor       | Receives a message indicating that they are the impostor and do not know the secret word. |
 
 If the bot cannot send a direct message to one or more players, it must report the issue. In that case, the game should not continue normally and the lobby must be closed to avoid an inconsistent state.
-
----
 
 ## Secret Words
 
@@ -120,8 +106,6 @@ data/words.json
 
 If a valid secret word cannot be obtained, the game must not start.
 
----
-
 ## Invalid Actions
 
 The bot must prevent the following actions:
@@ -136,8 +120,6 @@ The bot must prevent the following actions:
 | Starting without being the host.        | The bot reports that only the host can start.              |
 | Starting with fewer than 3 players.     | The bot reports that at least 3 players are required.      |
 | Cancelling without being the host.      | The bot reports that only the host can cancel.             |
-
----
 
 ## Out of Scope
 
@@ -155,8 +137,6 @@ The bot does not include:
 * turn control;
 * moderation of words or clues;
 * automatic final reveal of the word or the impostor.
-
----
 
 ## Completion Criteria
 

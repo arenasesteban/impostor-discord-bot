@@ -4,8 +4,6 @@ A Discord bot built with `discord.py` to manage the setup phase of **The Imposto
 
 The bot acts as a neutral referee at the beginning of each match: it creates a lobby, registers players, selects a secret word, randomly chooses one impostor, and sends each player their role by direct message.
 
----
-
 ## Description
 
 **Impostor Discord Bot** helps organize games of **The Impostor** inside a Discord server.
@@ -13,8 +11,6 @@ The bot acts as a neutral referee at the beginning of each match: it creates a l
 When a game starts, the bot sends the secret word by direct message to every regular player. One randomly selected player receives a message indicating that they are the impostor, without knowing the secret word.
 
 After sending the roles, the bot finishes its job. The rest of the game — clues, discussion, voting, and deciding the winner — is handled by the players.
-
----
 
 ## Main Features
 
@@ -29,17 +25,15 @@ After sending the roles, the bot finishes its job. The rest of the game — clue
 * Random impostor selection.
 * Role distribution through direct messages.
 * Configurable word list using a JSON file.
-
----
+* Basic automated tests for game logic and word loading.
 
 ## Technologies
 
 * Python
 * discord.py
 * python-dotenv
+* pytest
 * JSON
-
----
 
 ## Installation
 
@@ -58,8 +52,6 @@ Example using `micromamba`:
 micromamba create -f environment.yml
 micromamba activate impostor-discord-bot-env
 ```
-
----
 
 ## Discord Bot Setup
 
@@ -92,9 +84,7 @@ When generating the bot invitation URL, enable the following scopes:
 * `bot`
 * `applications.commands`
 
-The bot also needs the required permissions to send messages and use slash commands inside the server.
-
----
+The bot also needs the required permissions to send messages, use slash commands, and send direct messages to players.
 
 ## Running the Bot
 
@@ -120,8 +110,6 @@ python -m impostor_bot.main
 
 If the configuration is correct, the bot should appear online in Discord.
 
----
-
 ## Basic Usage
 
 The main flow is:
@@ -134,8 +122,6 @@ The main flow is:
 6. The bot selects a secret word and one impostor.
 7. The bot sends the roles by direct message.
 8. The lobby is closed and the game continues between the players.
-
----
 
 ## Main Commands
 
@@ -152,8 +138,6 @@ The bot uses slash commands grouped under `/impostor`.
 | `/impostor help`   | Shows a quick usage guide.                             |
 
 The host is automatically added to the game when creating a lobby.
-
----
 
 ## Secret Words
 
@@ -177,7 +161,26 @@ The file is organized by categories:
 
 To add or modify words, edit `data/words.json` while keeping a valid JSON format.
 
----
+## Testing
+
+The project includes basic automated tests for the core logic.
+
+The tests focus on areas that do not require a live Discord connection:
+
+* game session creation;
+* player registration;
+* duplicate player validation;
+* player removal;
+* minimum player validation;
+* impostor selection;
+* role generation;
+* game cancellation;
+* word loading from JSON;
+* category validation.
+
+Run the test suite from the project root:
+
+pytest
 
 ## Project Structure
 
@@ -194,8 +197,13 @@ impostor-discord-bot/
 │       ├── discord/
 │       ├── game/
 │       └── words/
+├── tests/
+│   ├── test_game.py
+│   └── test_words.py
 ├── .env.example
 ├── .gitignore
+├── environment.yml
+├── pytest.ini
 ├── README.md
 └── requirements.txt
 ```
@@ -212,7 +220,7 @@ The internal structure separates:
 * interactive views;
 * temporary game state.
 
----
+The `tests/` directory contains automated tests for the core logic.
 
 ## Additional Documentation
 
@@ -224,8 +232,6 @@ Some planned or related documents include:
 * `docs/game-flow.md`
 * `docs/rules.md`
 * `docs/words.md`
-
----
 
 ## Current Scope
 
@@ -254,24 +260,20 @@ It does not include:
 * database persistence;
 * server-specific configuration.
 
----
-
 ## Possible Improvements
 
 * Allow word category selection from Discord.
 * Add support for multiple impostors.
 * Add server-specific configuration.
 * Add database persistence.
-
----
+* Add more automated tests for message builders and edge cases.
+* Add manual testing notes for Discord interactions.
 
 ## Credits
 
-Develop by Esteban Arenas.
+Developed by Esteban Arenas.
 
 This project was built as part of a hands-on learning process in Python, discord.py, and modular application design. It was developed incrementally, prioritizing clarity, separation of responsibilities, and understanding of the bot’s internal flow.
-
-### Contact
 
 [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/arenasesteban)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-%230A66C2.svg?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/esteban-arenas-álvarez-0813462a1) [![Gmail](https://img.shields.io/badge/Gmail-%23D44638.svg?style=for-the-badge&logo=gmail&logoColor=white)](mailto:esteban.arenas.az@gmail.com)

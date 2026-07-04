@@ -4,8 +4,6 @@ This document describes how **Impostor Discord Bot** loads, organizes, and uses 
 
 Words are stored in an external JSON file to keep them separate from the bot's source code.
 
----
-
 ## Words File
 
 Game words are stored in:
@@ -15,8 +13,6 @@ data/words.json
 ```
 
 This file is located outside `src/` because it belongs to the project's configurable data.
-
----
 
 ## Expected Format
 
@@ -44,8 +40,6 @@ The expected structure is an object where each key represents a category, and ea
 }
 ```
 
----
-
 ## Default Category
 
 Currently, the bot uses the category:
@@ -62,8 +56,6 @@ This category is used when the host starts a game with:
 
 For now, the category cannot be selected from Discord. The bot gets a word from the default configured category.
 
----
-
 ## File Rules
 
 | Rule                              | Description                                              |
@@ -74,8 +66,6 @@ For now, the category cannot be selected from Discord. The bot gets a word from 
 | Each category must contain a list | Words must be stored inside a JSON list.                 |
 | Lists must not be empty           | An empty category does not allow the game to start.      |
 | Words must be text                | Each word must be written as a string.                   |
-
----
 
 ## Usage During a Game
 
@@ -95,8 +85,6 @@ the bot performs the following process:
 6. selects one impostor, who does not receive the secret word.
 
 The secret word is never shown in the public channel.
-
----
 
 ## Selection Example
 
@@ -122,8 +110,6 @@ Regular players receive that word by direct message.
 
 The impostor receives a message indicating that they are the impostor, but does not know the secret word.
 
----
-
 ## Editing the File
 
 To add new words, edit `data/words.json` and add items to the corresponding category.
@@ -141,8 +127,6 @@ To add new words, edit `data/words.json` and add items to the corresponding cate
 ```
 
 After modifying the file, save the changes and restart the bot if it is already running.
-
----
 
 ## Additional Categories
 
@@ -165,8 +149,6 @@ The file can contain more than one category.
 
 As long as the bot does not have an option to choose a category from Discord, it will continue using the default category.
 
----
-
 ## Handled Errors
 
 | Case                        | Expected Result                                               |
@@ -179,8 +161,6 @@ As long as the bot does not have an option to choose a category from Discord, it
 
 If one of these errors occurs, the game should not start.
 
----
-
 ## Recommendations
 
 To keep the file organized:
@@ -191,8 +171,6 @@ To keep the file organized:
 * check that the JSON does not have punctuation errors;
 * keep enough words in the `general` category;
 * group words by category if the bot is expanded later.
-
----
 
 ## Complete Example
 

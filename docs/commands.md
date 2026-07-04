@@ -8,8 +8,6 @@ The main game commands are grouped under:
 /impostor
 ```
 
----
-
 ## General Summary
 
 | Command            | Purpose                                | Main Use                      |
@@ -21,8 +19,6 @@ The main game commands are grouped under:
 | `/impostor status` | Shows the current game status.         | Review joined players.        |
 | `/impostor start`  | Starts the game and sends roles by DM. | Begin the game.               |
 | `/impostor cancel` | Cancels an open game.                  | Close the lobby.              |
-
----
 
 ## Command Details
 
@@ -36,8 +32,6 @@ The main game commands are grouped under:
 | `/impostor start`  | Starts the game. The bot validates the host, checks the minimum number of players, chooses a secret word, selects one impostor, and sends the roles by direct message.           | Host only.                     |
 | `/impostor cancel` | Cancels an open game. The lobby is visually closed and the buttons are disabled.                                                                                                 | Host only.                     |
 
----
-
 ## Usage Flow
 
 1. The host runs `/impostor create`.
@@ -48,8 +42,6 @@ The main game commands are grouped under:
 6. The host starts the game with `/impostor start`.
 7. The bot sends the roles by direct message.
 8. The lobby is closed and the game continues between the players.
-
----
 
 ## Command Rules
 
@@ -67,8 +59,6 @@ The main game commands are grouped under:
 | The secret word is never shown in the public channel.           | `/impostor start`          |
 | The impostor is never revealed in the public channel.           | `/impostor start`          |
 
----
-
 ## Expected Responses
 
 | Action       | Expected Result                                                                      |
@@ -79,8 +69,6 @@ The main game commands are grouped under:
 | Check status | The bot shows the current status, host, and player list.                             |
 | Start        | The bot sends the roles by DM, closes the lobby, and disables the buttons.           |
 | Cancel       | The bot cancels the game, closes the lobby, and disables the buttons.                |
-
----
 
 ## Main Errors
 
@@ -97,8 +85,6 @@ The main game commands are grouped under:
 | There are fewer than 3 players.       | The bot reports that at least 3 players are required.             |
 | A DM cannot be sent.                  | The bot reports which players could not receive a direct message. |
 | No words are available.               | The bot reports an error related to the words file.               |
-
----
 
 ## Starting a Game
 
@@ -117,8 +103,6 @@ When `/impostor start` is executed, the bot performs the following actions:
 
 The public channel does not show the secret word or the impostor player.
 
----
-
 ## Direct Messages
 
 | Player Type    | Received Message                                                                          |
@@ -127,8 +111,6 @@ The public channel does not show the secret word or the impostor player.
 | Impostor       | Receives a message indicating that they are the impostor and do not know the secret word. |
 
 If one or more players have direct messages disabled, the bot reports the issue and the game does not continue normally.
-
----
 
 ## Interactive Buttons
 

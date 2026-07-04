@@ -6,8 +6,6 @@ The bot only manages the setup phase of the game: it creates the lobby, register
 
 After that, the game continues between the players.
 
----
-
 ## Flow Summary
 
 ```text
@@ -19,8 +17,6 @@ After that, the game continues between the players.
 → the lobby is closed
 → the game continues between the players
 ```
-
----
 
 ## 1. Create a Game
 
@@ -44,8 +40,6 @@ The bot publishes a lobby in the channel with:
 
 Only one active game can exist per channel.
 
----
-
 ## 2. Join the Game
 
 Players can join while the game is open.
@@ -64,8 +58,6 @@ When a user joins successfully:
 * the user receives a confirmation visible only to them.
 
 The host does not need to join, because they are automatically registered when creating the game.
-
----
 
 ## 3. Leave the Game
 
@@ -90,8 +82,6 @@ The host cannot leave the game. To close the lobby, the host must use:
 /impostor cancel
 ```
 
----
-
 ## 4. Check the Game Status
 
 At any time before starting, users can check the status with:
@@ -108,8 +98,6 @@ The bot shows:
 * player list.
 
 This command is useful for confirming who has joined before starting.
-
----
 
 ## 5. Start the Game
 
@@ -139,8 +127,6 @@ When the game starts, the bot performs these actions:
 
 The public channel does not show the secret word or who the impostor is.
 
----
-
 ## 6. Receive the Role by Direct Message
 
 Once the game starts, each player receives a direct message.
@@ -153,8 +139,6 @@ Once the game starts, each player receives a direct message.
 Regular players should say a word related to the secret word while avoiding making it too obvious.
 
 The impostor should listen to the other players' clues and try to blend in.
-
----
 
 ## 7. Continue the Game Outside the Bot
 
@@ -169,8 +153,6 @@ From that moment on, the players continue the game on their own:
 5. the result is decided by the players.
 
 The bot does not control this stage.
-
----
 
 ## 8. Cancel a Game
 
@@ -188,8 +170,6 @@ When cancelled:
 * players can no longer join or leave that game.
 
 Only the host can cancel a game.
-
----
 
 ## Alternative Flows
 
@@ -221,8 +201,6 @@ This usually happens when a user has disabled direct messages from server member
 
 In that case, the bot reports the issue and the game does not continue normally. Players must enable direct messages and create a new game.
 
----
-
 ## Private Information
 
 During the game flow, the bot never publicly shows:
@@ -231,8 +209,6 @@ During the game flow, the bot never publicly shows:
 * who the impostor is.
 
 That information is only delivered by direct message to the corresponding players.
-
----
 
 ## Bot Responsibility
 

@@ -1,19 +1,20 @@
 import random
 from dataclasses import dataclass, field
 
+from src.impostor_bot.constants import (
+    STATUS_OPEN,
+    STATUS_STARTED,
+    STATUS_CANCELLED,
+    MIN_PLAYERS
+)
 from .exceptions import (
     GameError,
     GameAlreadyStartedError, 
     PlayerAlreadyJoinedError,
     HostCannotLeaveError,
-    PlayerNotFoundError
+    PlayerNotFoundError,
+    NotEnoughPlayersError
 )
-
-
-MIN_PLAYERS = 3
-STATUS_OPEN = "open"
-STATUS_STARTED = "started"
-STATUS_CANCELLED = "cancelled"
 
 
 @dataclass
@@ -56,7 +57,7 @@ class Session:
             raise GameAlreadyStartedError("Game has already started.")
     
         if len(self.players) < MIN_PLAYERS:
-            raise ValueError(f"Cannot start the game with less than {MIN_PLAYERS} players.")
+            raise NotEnoughPlayersError(f"Cannot start the game with less than {MIN_PLAYERS} players.")
         
         self.secret_word = secret_word
         self.impostor_id = random.choice(self.players)
