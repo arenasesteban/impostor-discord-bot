@@ -23,9 +23,8 @@ from impostor_bot.discord.messages import (
     send_impostor_dm,
     send_normal_player_dm,
 )
-from impostor_bot.discord.state import active_games, active_lobby_messages
+
 from impostor_bot.discord.views import LobbyView
-from impostor_bot.game.session import Session
 from impostor_bot.game.exceptions import (
     GameAlreadyStartedError,
     GameError,
@@ -36,6 +35,20 @@ from impostor_bot.game.exceptions import (
 )
 from impostor_bot.words.exceptions import WordError
 from impostor_bot.words.loader import get_random_word
+
+from impostor_bot.application.create_game import CreateGame
+from impostor_bot.application.exceptions import GameAlreadyExistsError
+
+from impostor_bot.discord.state import (
+    active_games,
+    active_lobby_messages,
+    game_repository,
+)
+
+from impostor_bot.game.session_key import GameSessionKey
+
+
+create_game_use_case = CreateGame(game_repository)
 
 
 impostor_group = app_commands.Group(
@@ -50,37 +63,29 @@ def get_channel_id(interaction: discord.Interaction) -> int:
     
     return interaction.channel.id
 
+def get_game_session_key(interaction: discord.Interaction) -> GameSessionKey:
+    channel_id = get_channel_id(interaction)
+
+    if interaction.guild_id is None:
+        raise GameError(
+            "This command can only be used inside a Discord server."
+        )
+
+    return GameSessionKey(
+        guild_id=interaction.guild_id,
+        channel_id=channel_id,
+    )
+
 
 @impostor_group.command(
     name="create",
     description="Create a new Impostor game in the current channel."
 )
 async def create(interaction: discord.Interaction):
-    try:
-        channel_id = get_channel_id(interaction)
-        host_id = interaction.user.id
-
-        if channel_id in active_games:
-            await send_error(
-                interaction,
-                "There is already an open game in this channel. "
-                "Use `/impostor status` to check it.",
-            )
-            return
-
-        game = Session(host_id=host_id)
-        active_games[channel_id] = game
-
-        await interaction.response.send_message(
-            content=build_game_created_message(game),
-            view=LobbyView(channel_id=channel_id),
-        )
-
-        message = await interaction.original_response()
-        active_lobby_messages[channel_id] = message.id
-
-    except GameError as error:
-        await send_error(interaction, str(error))
+    await handle_create(
+        interaction=interaction,
+        use_case=create_game_use_case,
+    )
 
 
 @impostor_group.command( 
@@ -358,3 +363,35 @@ async def help_command(interaction: discord.Interaction):
         build_help_message(),
         ephemeral=True,
     )
+
+
+async def handle_create(
+    interaction: discord.Interaction,
+    use_case: CreateGame,
+) -> None:
+    try:
+        key = get_game_session_key(interaction)
+
+        game = await use_case.execute(
+            key=key,
+            host_id=interaction.user.id,
+        )
+
+        await interaction.response.send_message(
+            content=build_game_created_message(game),
+            view=LobbyView(channel_id=key.channel_id),
+        )
+
+        message = await interaction.original_response()
+
+        active_lobby_messages[key.channel_id] = message.id
+
+    except GameAlreadyExistsError:
+        await send_error(
+            interaction,
+            "There is already an open game in this channel. "
+            "Use `/impostor status` to check it.",
+        )
+
+    except GameError as error:
+        await send_error(interaction, str(error))
