@@ -4,8 +4,6 @@ from discord import app_commands
 from impostor_bot.constants import IMPOSTOR_ROLE
 from impostor_bot.discord.lobby import (
     close_lobby_message,
-    join_lobby,
-    leave_lobby,
     refresh_lobby_message,
 )
 from impostor_bot.discord.messages import (
@@ -45,36 +43,31 @@ from impostor_bot.discord.state import (
     game_repository,
 )
 
-from impostor_bot.game.session_key import GameSessionKey
+from impostor_bot.discord.context import (
+    get_channel_id,
+    get_game_session_key,
+)
+
+from impostor_bot.application.exceptions import (
+    GameAlreadyExistsError,
+    GameNotFoundError,
+)
+
+from impostor_bot.application.join_game import JoinGame
+from impostor_bot.application.leave_game import LeaveGame
+
+from impostor_bot.game.player import Player
 
 
 create_game_use_case = CreateGame(game_repository)
+join_game_use_case = JoinGame(game_repository)
+leave_game_use_case = LeaveGame(game_repository)
 
 
 impostor_group = app_commands.Group(
     name="impostor",
     description="Commands for managing Impostor games.",
 )
-
-
-def get_channel_id(interaction: discord.Interaction) -> int:
-    if interaction.channel is None:
-        raise GameError("This command can only be used inside a server channel.")
-    
-    return interaction.channel.id
-
-def get_game_session_key(interaction: discord.Interaction) -> GameSessionKey:
-    channel_id = get_channel_id(interaction)
-
-    if interaction.guild_id is None:
-        raise GameError(
-            "This command can only be used inside a Discord server."
-        )
-
-    return GameSessionKey(
-        guild_id=interaction.guild_id,
-        channel_id=channel_id,
-    )
 
 
 @impostor_group.command(
@@ -84,50 +77,19 @@ def get_game_session_key(interaction: discord.Interaction) -> GameSessionKey:
 async def create(interaction: discord.Interaction):
     await handle_create(
         interaction=interaction,
-        use_case=create_game_use_case,
+        use_case=create_game_use_case
     )
 
 
-@impostor_group.command( 
+@impostor_group.command(
     name="join",
     description="Join an active Impostor game in the current channel."
 )
 async def join(interaction: discord.Interaction):
-    try:
-        channel_id = get_channel_id(interaction)
-        player_id = interaction.user.id
-
-        game = join_lobby(
-            channel_id=channel_id,
-            player_id=player_id,
-        )
-
-        await refresh_lobby_message(
-            client=interaction.client,
-            channel_id=channel_id,
-            view=LobbyView(channel_id=channel_id),
-        )
-
-        await interaction.response.send_message(
-            build_player_joined_message(player_id, len(game.players)),
-            ephemeral=True,
-        )
-
-    except PlayerAlreadyJoinedError:
-        await send_error(
-            interaction,
-            "You have already joined this game. "
-            "Use `/impostor estado` to see the player list.",
-        )
-
-    except GameAlreadyStartedError:
-        await send_error(
-            interaction,
-            "You cannot join because the game has already started.",
-        )
-
-    except GameError as error:
-        await send_error(interaction, str(error))
+    await handle_join(
+        interaction=interaction,
+        use_case=join_game_use_case
+    )
 
 
 @impostor_group.command(
@@ -135,47 +97,10 @@ async def join(interaction: discord.Interaction):
     description="Leave an active Impostor game in the current channel."
 )
 async def leave(interaction: discord.Interaction):
-    try:
-        channel_id = get_channel_id(interaction)
-        player_id = interaction.user.id
-
-        game = leave_lobby(
-            channel_id=channel_id,
-            player_id=player_id,
-        )
-
-        await refresh_lobby_message(
-            client=interaction.client,
-            channel_id=channel_id,
-            view=LobbyView(channel_id=channel_id),
-        )
-
-        await interaction.response.send_message(
-            build_player_left_message(player_id, len(game.players)),
-            ephemeral=True,
-        )
-
-    except HostCannotLeaveError:
-        await send_error(
-            interaction,
-            "The host cannot leave the game. "
-            "If you want to close it, use `/impostor cancelar`.",
-        )
-
-    except PlayerNotFoundError:
-        await send_error(
-            interaction,
-            "You are not currently joined in this game.",
-        )
-
-    except GameAlreadyStartedError:
-        await send_error(
-            interaction,
-            "You cannot leave because the game has already started.",
-        )
-
-    except GameError as error:
-        await send_error(interaction, str(error))
+    await handle_leave(
+        interaction=interaction,
+        use_case=leave_game_use_case
+    )
 
 
 @impostor_group.command(
@@ -191,7 +116,7 @@ async def status(interaction: discord.Interaction):
             await send_error(
                 interaction,
                 "There is no open game in this channel. "
-                "Use `/impostor create` to create one.",
+                "Use `/impostor create` to create one."
             )
             return
 
@@ -218,14 +143,14 @@ async def cancel(interaction: discord.Interaction):
         if game is None:
             await send_error(
                 interaction,
-                "There is no open game in this channel.",
+                "There is no open game in this channel."
             )
             return
 
         if user_id != game.host_id:
             await send_error(
                 interaction,
-                "Only the host can cancel the game.",
+                "Only the host can cancel the game."
             )
             return
 
@@ -237,20 +162,20 @@ async def cancel(interaction: discord.Interaction):
             client=interaction.client,
             channel_id=channel_id,
             content=build_lobby_cancelled_message(game),
-            view=closed_lobby_view,
+            view=closed_lobby_view
         )
 
         del active_games[channel_id]
 
         await interaction.response.send_message(
             build_game_cancelled_message(),
-            ephemeral=False,
+            ephemeral=False
         )
 
     except GameAlreadyStartedError:
         await send_error(
             interaction,
-            "A game that has already started cannot be cancelled.",
+            "A game that has already started cannot be cancelled."
         )
 
     except GameError as error:
@@ -274,14 +199,14 @@ async def start(interaction: discord.Interaction):
         if game is None:
             await send_error(
                 interaction,
-                "There is no open game in this channel.",
+                "There is no open game in this channel."
             )
             return
 
         if user_id != game.host_id:
             await send_error(
                 interaction,
-                "Only the host can start the game.",
+                "Only the host can start the game."
             )
             return
 
@@ -309,12 +234,12 @@ async def start(interaction: discord.Interaction):
                 client=interaction.client,
                 channel_id=channel_id,
                 content=build_lobby_cancelled_message(game),
-                view=closed_lobby_view,
+                view=closed_lobby_view
             )
 
             await interaction.response.send_message(
                 build_dm_error_message(failed_players),
-                ephemeral=True,
+                ephemeral=True
             )
 
             del active_games[channel_id]
@@ -324,21 +249,21 @@ async def start(interaction: discord.Interaction):
             client=interaction.client,
             channel_id=channel_id,
             content=build_lobby_started_message(game),
-            view=closed_lobby_view,
+            view=closed_lobby_view
         )
 
         del active_games[channel_id]
 
         await interaction.followup.send(
             build_game_started_message(),
-            ephemeral=False,
+            ephemeral=False
         )
 
     except NotEnoughPlayersError:
         await send_error(
             interaction,
             "The game needs at least 3 players to start. "
-            "Use `/impostor estado` to check the player list.",
+            "Use `/impostor estado` to check the player list."
         )
 
     except WordError as error:
@@ -347,7 +272,7 @@ async def start(interaction: discord.Interaction):
     except GameAlreadyStartedError:
         await send_error(
             interaction,
-            "This game has already started or is no longer available.",
+            "This game has already started or is no longer available."
         )
 
     except GameError as error:
@@ -361,25 +286,22 @@ async def start(interaction: discord.Interaction):
 async def help_command(interaction: discord.Interaction):
     await interaction.response.send_message(
         build_help_message(),
-        ephemeral=True,
+        ephemeral=True
     )
 
 
-async def handle_create(
-    interaction: discord.Interaction,
-    use_case: CreateGame,
-) -> None:
+async def handle_create(interaction: discord.Interaction, use_case: CreateGame) -> None:
     try:
         key = get_game_session_key(interaction)
 
         game = await use_case.execute(
             key=key,
-            host_id=interaction.user.id,
+            host_id=interaction.user.id
         )
 
         await interaction.response.send_message(
             content=build_game_created_message(game),
-            view=LobbyView(channel_id=key.channel_id),
+            view=LobbyView(channel_id=key.channel_id)
         )
 
         message = await interaction.original_response()
@@ -390,8 +312,116 @@ async def handle_create(
         await send_error(
             interaction,
             "There is already an open game in this channel. "
-            "Use `/impostor status` to check it.",
+            "Use `/impostor status` to check it."
         )
 
     except GameError as error:
         await send_error(interaction, str(error))
+
+
+async def handle_join(interaction: discord.Interaction, use_case: JoinGame) -> None:
+    try:
+        key = get_game_session_key(interaction)
+
+        game = await use_case.execute(
+            key=key,
+            player=Player(
+                id=interaction.user.id
+            )
+        )
+
+        await refresh_lobby_message(
+            client=interaction.client,
+            channel_id=key.channel_id,
+            game=game,
+            view=LobbyView(
+                channel_id=key.channel_id
+            )
+        )
+
+        await interaction.response.send_message(
+            build_player_joined_message(interaction.user.id, len(game.players)),
+            ephemeral=True
+        )
+
+    except GameNotFoundError as error:
+        await send_error(
+            interaction,
+            str(error)
+        )
+
+    except PlayerAlreadyJoinedError:
+        await send_error(
+            interaction,
+            "You have already joined this game. "
+            "Use `/impostor status` to see the player list."
+        )
+
+    except GameAlreadyStartedError:
+        await send_error(
+            interaction,
+            "You cannot join because the game has already started."
+        )
+
+    except GameError as error:
+        await send_error(
+            interaction,
+            str(error)
+        )
+
+
+async def handle_leave(interaction: discord.Interaction, use_case: LeaveGame) -> None:
+    try:
+        key = get_game_session_key(interaction)
+
+        game = await use_case.execute(
+            key=key,
+            player=Player(
+                id=interaction.user.id
+            )
+        )
+
+        await refresh_lobby_message(
+            client=interaction.client,
+            channel_id=key.channel_id,
+            game=game,
+            view=LobbyView(
+                channel_id=key.channel_id
+            )
+        )
+
+        await interaction.response.send_message(
+            build_player_left_message(interaction.user.id, len(game.players)),
+            ephemeral=True
+        )
+
+    except GameNotFoundError as error:
+        await send_error(
+            interaction,
+            str(error)
+        )
+
+    except HostCannotLeaveError:
+        await send_error(
+            interaction,
+            "The host cannot leave the game. "
+            "If you want to close it, use `/impostor cancel`."
+        )
+
+    except PlayerNotFoundError:
+        await send_error(
+            interaction,
+            "You are not currently joined in this game."
+        )
+
+    except GameAlreadyStartedError:
+        await send_error(
+            interaction,
+            "You cannot leave because the game has already started."
+        )
+
+    except GameError as error:
+        await send_error(
+            interaction,
+            str(error)
+        )
