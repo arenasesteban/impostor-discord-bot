@@ -2,19 +2,19 @@ import json
 
 import pytest
 
-import src.impostor_bot.words.loader as words
-from src.impostor_bot.words.loader import (
+import impostor_bot.words.loader as words
+from impostor_bot.words.loader import (
     load_words,
     get_words_by_category,
     get_random_word,
 )
-from src.impostor_bot.words.exceptions import (
+from impostor_bot.words.exceptions import (
     WordsFileNotFoundError,
     EmptyWordsFileError,
     CategoryNotFoundError,
     EmptyCategoryError,
 )
-from src.impostor_bot.constants import DEFAULT_WORD_CATEGORY
+from impostor_bot.constants import DEFAULT_WORD_CATEGORY
 
 
 @pytest.fixture

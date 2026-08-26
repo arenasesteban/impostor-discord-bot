@@ -1,7 +1,8 @@
 import pytest
 
-from src.impostor_bot.game.session import Session
-from src.impostor_bot.game.exceptions import (
+from impostor_bot.game.session import Session
+
+from impostor_bot.game.exceptions import (
     PlayerAlreadyJoinedError,
     PlayerNotFoundError,
     GameAlreadyStartedError,
@@ -9,7 +10,7 @@ from src.impostor_bot.game.exceptions import (
     HostCannotLeaveError,
 )
 
-from src.impostor_bot.constants import (
+from impostor_bot.constants import (
     STATUS_OPEN,
     STATUS_STARTED,
     STATUS_CANCELLED,
