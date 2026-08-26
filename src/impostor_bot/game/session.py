@@ -1,13 +1,14 @@
 import random
 from dataclasses import dataclass, field
 
-from src.impostor_bot.constants import (
+from impostor_bot.constants import (
     STATUS_OPEN,
     STATUS_STARTED,
     STATUS_CANCELLED,
     MIN_PLAYERS
 )
-from .exceptions import (
+
+from impostor_bot.game.exceptions import (
     GameError,
     GameAlreadyStartedError, 
     PlayerAlreadyJoinedError,
