@@ -17,9 +17,7 @@ from impostor_bot.discord.messages import (
     build_lobby_started_message,
     build_dm_error_message,
     build_help_message,
-    send_error,
-    send_impostor_dm,
-    send_normal_player_dm,
+    send_error
 )
 
 from impostor_bot.discord.views import LobbyView
@@ -32,7 +30,6 @@ from impostor_bot.game.exceptions import (
     NotEnoughPlayersError,
 )
 from impostor_bot.words.exceptions import WordError
-from impostor_bot.words.loader import get_random_word
 
 from impostor_bot.application.create_game import CreateGame
 from impostor_bot.application.exceptions import GameAlreadyExistsError
@@ -51,6 +48,7 @@ from impostor_bot.discord.context import (
 from impostor_bot.application.exceptions import (
     GameAlreadyExistsError,
     GameNotFoundError,
+    NotGameHostError,
 )
 
 from impostor_bot.application.join_game import JoinGame
@@ -58,11 +56,36 @@ from impostor_bot.application.leave_game import LeaveGame
 
 from impostor_bot.game.player import Player
 
+from impostor_bot.application.start_game import StartGame
+from impostor_bot.application.release_game_session import (
+    ReleaseGameSession,
+)
 
-create_game_use_case = CreateGame(game_repository)
-join_game_use_case = JoinGame(game_repository)
-leave_game_use_case = LeaveGame(game_repository)
+from impostor_bot.infrastructure.random.python_random_selector import (
+    PythonRandomSelector,
+)
 
+from impostor_bot.infrastructure.word_providers.static_word_provider import (
+    StaticWordProvider,
+)
+
+from impostor_bot.discord.role_delivery import deliver_roles
+
+word_provider = StaticWordProvider()
+random_selector = PythonRandomSelector()
+
+start_game_use_case = StartGame(
+    repository=game_repository,
+    word_provider=word_provider,
+    random_selector=random_selector,
+)
+create_game_use_case = CreateGame(repository=game_repository)
+join_game_use_case = JoinGame(repository=game_repository)
+leave_game_use_case = LeaveGame(repository=game_repository)
+
+release_game_session_use_case = ReleaseGameSession(
+    repository=game_repository,
+)
 
 impostor_group = app_commands.Group(
     name="impostor",
@@ -188,95 +211,11 @@ async def cancel(interaction: discord.Interaction):
     description="Starts the game and sends secret roles by direct message.",
 )
 async def start(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=True, thinking=True)
-
-    try:
-        channel_id = get_channel_id(interaction)
-        user_id = interaction.user.id
-
-        game = active_games.get(channel_id)
-
-        if game is None:
-            await send_error(
-                interaction,
-                "There is no open game in this channel."
-            )
-            return
-
-        if user_id != game.host_id:
-            await send_error(
-                interaction,
-                "Only the host can start the game."
-            )
-            return
-
-        secret_word = get_random_word()
-        roles = game.start_game(secret_word)
-
-        failed_players: list[int] = []
-
-        for player_id, role in roles.items():
-            user = await interaction.client.fetch_user(player_id)
-
-            try:
-                if role == IMPOSTOR_ROLE:
-                    await send_impostor_dm(user)
-                else:
-                    await send_normal_player_dm(user, role)
-
-            except discord.Forbidden:
-                failed_players.append(player_id)
-
-        closed_lobby_view = LobbyView(channel_id=channel_id, disabled=True)
-
-        if failed_players:
-            await close_lobby_message(
-                client=interaction.client,
-                channel_id=channel_id,
-                content=build_lobby_cancelled_message(game),
-                view=closed_lobby_view
-            )
-
-            await interaction.response.send_message(
-                build_dm_error_message(failed_players),
-                ephemeral=True
-            )
-
-            del active_games[channel_id]
-            return
-
-        await close_lobby_message(
-            client=interaction.client,
-            channel_id=channel_id,
-            content=build_lobby_started_message(game),
-            view=closed_lobby_view
-        )
-
-        del active_games[channel_id]
-
-        await interaction.followup.send(
-            build_game_started_message(),
-            ephemeral=False
-        )
-
-    except NotEnoughPlayersError:
-        await send_error(
-            interaction,
-            "The game needs at least 3 players to start. "
-            "Use `/impostor estado` to check the player list."
-        )
-
-    except WordError as error:
-        await send_error(interaction, str(error))
-
-    except GameAlreadyStartedError:
-        await send_error(
-            interaction,
-            "This game has already started or is no longer available."
-        )
-
-    except GameError as error:
-        await send_error(interaction, str(error))
+    await handle_start(
+        interaction=interaction,
+        use_case=start_game_use_case,
+        release_use_case=release_game_session_use_case
+    )
 
 
 @impostor_group.command(
@@ -418,6 +357,99 @@ async def handle_leave(interaction: discord.Interaction, use_case: LeaveGame) ->
         await send_error(
             interaction,
             "You cannot leave because the game has already started."
+        )
+
+    except GameError as error:
+        await send_error(
+            interaction,
+            str(error)
+        )
+
+
+async def handle_start(interaction: discord.Interaction, use_case: StartGame,    release_use_case: ReleaseGameSession) -> None:
+    await interaction.response.defer(
+        ephemeral=True,
+        thinking=True,
+    )
+
+    try:
+        key = get_game_session_key(interaction)
+
+        result = await use_case.execute(
+            key=key,
+            requester_id=interaction.user.id
+        )
+
+        failed_players = await deliver_roles(
+            client=interaction.client,
+            roles=result.roles
+        )
+
+        closed_lobby_view = LobbyView(
+            channel_id=key.channel_id,
+            disabled=True
+        )
+
+        if failed_players:
+            await close_lobby_message(
+                client=interaction.client,
+                channel_id=key.channel_id,
+                content=build_lobby_cancelled_message(result.game),
+                view=closed_lobby_view
+            )
+
+            await release_use_case.execute(key)
+
+            await interaction.followup.send(
+                build_dm_error_message(failed_players),
+                ephemeral=True
+            )
+
+            return
+
+        await close_lobby_message(
+            client=interaction.client,
+            channel_id=key.channel_id,
+            content=build_lobby_started_message(result.game),
+            view=closed_lobby_view
+        )
+
+        await release_use_case.execute(key)
+
+        await interaction.followup.send(
+            build_game_started_message(),
+            ephemeral=False
+        )
+
+    except GameNotFoundError as error:
+        await send_error(
+            interaction,
+            str(error)
+        )
+
+    except NotGameHostError:
+        await send_error(
+            interaction,
+            "Only the host can start the game."
+        )
+
+    except NotEnoughPlayersError:
+        await send_error(
+            interaction,
+            "The game needs at least 3 players to start. "
+            "Use `/impostor status` to check the player list."
+        )
+
+    except WordError as error:
+        await send_error(
+            interaction,
+            str(error)
+        )
+
+    except GameAlreadyStartedError:
+        await send_error(
+            interaction,
+            "This game has already started or is no longer available."
         )
 
     except GameError as error:

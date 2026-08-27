@@ -51,7 +51,10 @@ def create_started_game() -> Game:
     game = Game.create(host_id=1)
     game.add_player(2)
     game.add_player(3)
-    game.start_game(secret_word="pizza")
+    game.start_game(
+        secret_word="pizza",
+        impostor_id=2,
+    )
 
     return game
 
