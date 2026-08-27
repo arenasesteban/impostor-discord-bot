@@ -9,10 +9,10 @@ class InMemoryGameRepository:
         self._games = games if games is not None else {}
 
     async def get(self, key: GameSessionKey) -> Game | None:
-        return self._games.get(key.channel_id)
+        return self._games.get(key)
 
     async def save(self, key: GameSessionKey, game: Game) -> None:
-        self._games[key.channel_id] = game
+        self._games[key] = game
 
     async def delete(self, key: GameSessionKey) -> None:
-        self._games.pop(key.channel_id, None)
+        self._games.pop(key, None)

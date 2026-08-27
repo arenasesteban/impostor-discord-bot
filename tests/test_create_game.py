@@ -37,8 +37,8 @@ def test_create_game_persists_new_game():
     assert stored_game is game
 
 
-def test_create_game_uses_legacy_channel_storage():
-    games: dict[int, Game] = {}
+def test_create_game_uses_full_session_key_storage():
+    games: dict[GameSessionKey, Game] = {}
 
     repository = InMemoryGameRepository(games)
     create_game = CreateGame(repository)
@@ -55,7 +55,7 @@ def test_create_game_uses_legacy_channel_storage():
         )
     )
 
-    assert games[200] is game
+    assert games[key] is game
 
 
 def test_create_game_rejects_existing_game():
@@ -86,7 +86,7 @@ def test_create_game_rejects_existing_game():
 
 
 def test_different_channels_can_create_independent_games():
-    games: dict[int, Game] = {}
+    games: dict[GameSessionKey, Game] = {}
 
     repository = InMemoryGameRepository(games)
     create_game = CreateGame(repository)
@@ -116,5 +116,5 @@ def test_different_channels_can_create_independent_games():
     )
 
     assert first_game is not second_game
-    assert games[200] is first_game
-    assert games[201] is second_game
+    assert games[first_key] is first_game
+    assert games[second_key] is second_game
