@@ -12,6 +12,12 @@ from impostor_bot.application.finish_game import FinishGame
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.game.state import GameState
+from impostor_bot.infrastructure.concurrency.asyncio_session_lock_manager import (
+    AsyncioSessionLockManager,
+)
+
+def create_lock_manager() -> AsyncioSessionLockManager:
+    return AsyncioSessionLockManager()
 
 
 class FakeGameRepository:
@@ -67,7 +73,10 @@ def test_finish_game_finishes_and_releases_session():
     game = create_started_game()
     repository = FakeGameRepository(game)
 
-    use_case = FinishGame(repository)
+    use_case = FinishGame(
+        repository=repository,
+        lock_manager=create_lock_manager(),
+    )
 
     result = asyncio.run(
         use_case.execute(
@@ -83,7 +92,8 @@ def test_finish_game_finishes_and_releases_session():
 
 def test_finish_game_rejects_missing_game():
     use_case = FinishGame(
-        FakeGameRepository()
+        repository=FakeGameRepository(),
+        lock_manager=create_lock_manager(),
     )
 
     with pytest.raises(GameNotFoundError):
@@ -100,7 +110,10 @@ def test_finish_game_rejects_non_host():
         create_started_game()
     )
 
-    use_case = FinishGame(repository)
+    use_case = FinishGame(
+        repository=repository,
+        lock_manager=create_lock_manager(),
+    )
 
     with pytest.raises(NotGameHostError):
         asyncio.run(
@@ -117,7 +130,10 @@ def test_cancel_waiting_game_cancels_and_releases_session():
     game = Game.create(host_id=1)
     repository = FakeGameRepository(game)
 
-    use_case = CancelGame(repository)
+    use_case = CancelGame(
+        repository=repository,
+        lock_manager=create_lock_manager(),
+    )
 
     result = asyncio.run(
         use_case.execute(
@@ -135,7 +151,10 @@ def test_cancel_started_game_cancels_and_releases_session():
         create_started_game()
     )
 
-    use_case = CancelGame(repository)
+    use_case = CancelGame(
+        repository=repository,
+        lock_manager=create_lock_manager(),
+    )
 
     result = asyncio.run(
         use_case.execute(
@@ -150,7 +169,8 @@ def test_cancel_started_game_cancels_and_releases_session():
 
 def test_cancel_game_rejects_missing_game():
     use_case = CancelGame(
-        FakeGameRepository()
+        repository=FakeGameRepository(),
+        lock_manager=create_lock_manager(),
     )
 
     with pytest.raises(GameNotFoundError):
@@ -167,7 +187,10 @@ def test_cancel_game_rejects_non_host():
         Game.create(host_id=1)
     )
 
-    use_case = CancelGame(repository)
+    use_case = CancelGame(
+        repository=repository,
+        lock_manager=create_lock_manager(),
+    )
 
     with pytest.raises(NotGameHostError):
         asyncio.run(

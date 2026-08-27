@@ -42,7 +42,8 @@ from impostor_bot.application.exceptions import (
 
 from impostor_bot.discord.state import (
     active_lobby_messages,
-    game_repository
+    game_repository,
+    session_lock_manager,
 )
 
 from impostor_bot.discord.context import (
@@ -73,17 +74,42 @@ from impostor_bot.discord.role_delivery import deliver_roles
 
 word_provider = StaticWordProvider()
 random_selector = PythonRandomSelector()
+
+create_game_use_case = CreateGame(
+    repository=game_repository,
+    lock_manager=session_lock_manager,
+)
+
+join_game_use_case = JoinGame(
+    repository=game_repository,
+    lock_manager=session_lock_manager,
+)
+
+leave_game_use_case = LeaveGame(
+    repository=game_repository,
+    lock_manager=session_lock_manager,
+)
+
 start_game_use_case = StartGame(
     repository=game_repository,
     word_provider=word_provider,
-    random_selector=random_selector
+    random_selector=random_selector,
+    lock_manager=session_lock_manager,
 )
-create_game_use_case = CreateGame(repository=game_repository)
-join_game_use_case = JoinGame(repository=game_repository)
-leave_game_use_case = LeaveGame(repository=game_repository)
-finish_game_use_case = FinishGame(repository=game_repository)
-cancel_game_use_case = CancelGame(repository=game_repository)
-get_game_status_use_case = GetGameStatus(repository=game_repository)
+
+finish_game_use_case = FinishGame(
+    repository=game_repository,
+    lock_manager=session_lock_manager,
+)
+
+cancel_game_use_case = CancelGame(
+    repository=game_repository,
+    lock_manager=session_lock_manager,
+)
+
+get_game_status_use_case = GetGameStatus(
+    repository=game_repository
+)
 
 
 impostor_group = app_commands.Group(

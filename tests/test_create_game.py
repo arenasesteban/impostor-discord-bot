@@ -9,13 +9,22 @@ from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.infrastructure.repositories.in_memory_game_repository import (
     InMemoryGameRepository,
 )
+from impostor_bot.infrastructure.concurrency.asyncio_session_lock_manager import (
+    AsyncioSessionLockManager,
+)
+
+def create_lock_manager() -> AsyncioSessionLockManager:
+    return AsyncioSessionLockManager()
 
 
 def test_create_game_persists_new_game():
-    games: dict[int, Game] = {}
+    games: dict[GameSessionKey, Game] = {}
 
     repository = InMemoryGameRepository(games)
-    create_game = CreateGame(repository)
+    create_game = CreateGame(
+        repository=repository,
+        lock_manager=create_lock_manager(),
+    )
 
     key = GameSessionKey(
         guild_id=100,
@@ -41,7 +50,10 @@ def test_create_game_uses_full_session_key_storage():
     games: dict[GameSessionKey, Game] = {}
 
     repository = InMemoryGameRepository(games)
-    create_game = CreateGame(repository)
+    create_game = CreateGame(
+        repository=repository,
+        lock_manager=create_lock_manager(),
+    )
 
     key = GameSessionKey(
         guild_id=100,
@@ -59,10 +71,13 @@ def test_create_game_uses_full_session_key_storage():
 
 
 def test_create_game_rejects_existing_game():
-    games: dict[int, Game] = {}
+    games: dict[GameSessionKey, Game] = {}
 
     repository = InMemoryGameRepository(games)
-    create_game = CreateGame(repository)
+    create_game = CreateGame(
+        repository=repository,
+        lock_manager=create_lock_manager(),
+    )
 
     key = GameSessionKey(
         guild_id=100,
@@ -89,7 +104,10 @@ def test_different_channels_can_create_independent_games():
     games: dict[GameSessionKey, Game] = {}
 
     repository = InMemoryGameRepository(games)
-    create_game = CreateGame(repository)
+    create_game = CreateGame(
+        repository=repository,
+        lock_manager=create_lock_manager(),
+    )
 
     first_key = GameSessionKey(
         guild_id=100,

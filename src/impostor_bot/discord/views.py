@@ -20,13 +20,23 @@ from impostor_bot.application.join_game import JoinGame
 from impostor_bot.application.leave_game import LeaveGame
 
 from impostor_bot.discord.context import get_game_session_key
-from impostor_bot.discord.state import game_repository
+from impostor_bot.discord.state import (
+    game_repository,
+    session_lock_manager,
+)
 
 from impostor_bot.game.player import Player
 
 
-join_game_use_case = JoinGame(game_repository)
-leave_game_use_case = LeaveGame(game_repository)
+join_game_use_case = JoinGame(
+    repository=game_repository,
+    lock_manager=session_lock_manager,
+)
+
+leave_game_use_case = LeaveGame(
+    repository=game_repository,
+    lock_manager=session_lock_manager,
+)
 
 
 async def handle_join_button(interaction: discord.Interaction, view: discord.ui.View, use_case: JoinGame) -> None:
