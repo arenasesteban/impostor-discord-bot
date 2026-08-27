@@ -2,12 +2,8 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
-from impostor_bot.application.exceptions import (
-    NotGameHostError,
-)
-from impostor_bot.application.start_game import (
-    StartGameResult,
-)
+from impostor_bot.application.exceptions import NotGameHostError
+from impostor_bot.application.start_game import StartGameResult
 from impostor_bot.constants import IMPOSTOR_ROLE
 from impostor_bot.discord.commands import handle_start
 from impostor_bot.game.exceptions import NotEnoughPlayersError
@@ -23,8 +19,26 @@ def create_ready_game() -> Game:
     return game
 
 
-def create_start_result() -> StartGameResult:
+def create_started_game() -> Game:
     game = create_ready_game()
+
+    game.start_game(
+        secret_word="pizza",
+        impostor_id=2,
+    )
+
+    return game
+
+
+def create_cancelled_game() -> Game:
+    game = create_started_game()
+    game.cancel()
+
+    return game
+
+
+def create_start_result() -> StartGameResult:
+    game = create_started_game()
 
     return StartGameResult(
         game=game,
@@ -36,14 +50,14 @@ def create_start_result() -> StartGameResult:
     )
 
 
-def create_interaction():
+def create_interaction(user_id: int = 1):
     return SimpleNamespace(
         guild_id=100,
         channel=SimpleNamespace(
             id=200,
         ),
         user=SimpleNamespace(
-            id=1,
+            id=user_id,
         ),
         client=SimpleNamespace(),
         response=SimpleNamespace(
@@ -57,7 +71,7 @@ def create_interaction():
     )
 
 
-def test_start_handler_executes_use_case_and_releases_session():
+def test_start_handler_keeps_started_game_active():
     result = create_start_result()
 
     use_case = SimpleNamespace(
@@ -66,7 +80,7 @@ def test_start_handler_executes_use_case_and_releases_session():
         )
     )
 
-    release_use_case = SimpleNamespace(
+    cancel_use_case = SimpleNamespace(
         execute=AsyncMock(),
     )
 
@@ -80,9 +94,13 @@ def test_start_handler_executes_use_case_and_releases_session():
             ),
         ),
         patch(
+            "impostor_bot.discord.commands.update_lobby_message",
+            new=AsyncMock(),
+        ) as update_lobby_mock,
+        patch(
             "impostor_bot.discord.commands.close_lobby_message",
             new=AsyncMock(),
-        ),
+        ) as close_lobby_mock,
         patch(
             "impostor_bot.discord.commands.LobbyView",
         ),
@@ -91,7 +109,7 @@ def test_start_handler_executes_use_case_and_releases_session():
             handle_start(
                 interaction=interaction,
                 use_case=use_case,
-                release_use_case=release_use_case,
+                cancel_use_case=cancel_use_case,
             )
         )
 
@@ -103,20 +121,18 @@ def test_start_handler_executes_use_case_and_releases_session():
         requester_id=1,
     )
 
-    release_use_case.execute.assert_awaited_once_with(
-        GameSessionKey(
-            guild_id=100,
-            channel_id=200,
-        )
-    )
+    cancel_use_case.execute.assert_not_awaited()
+
+    update_lobby_mock.assert_awaited_once()
+    close_lobby_mock.assert_not_awaited()
 
     interaction.response.defer.assert_awaited_once()
-
     interaction.followup.send.assert_awaited_once()
 
 
-def test_start_handler_releases_game_when_dm_delivery_fails():
+def test_start_handler_cancels_game_when_dm_delivery_fails():
     result = create_start_result()
+    cancelled_game = create_cancelled_game()
 
     use_case = SimpleNamespace(
         execute=AsyncMock(
@@ -124,8 +140,10 @@ def test_start_handler_releases_game_when_dm_delivery_fails():
         )
     )
 
-    release_use_case = SimpleNamespace(
-        execute=AsyncMock(),
+    cancel_use_case = SimpleNamespace(
+        execute=AsyncMock(
+            return_value=cancelled_game,
+        )
     )
 
     interaction = create_interaction()
@@ -138,9 +156,13 @@ def test_start_handler_releases_game_when_dm_delivery_fails():
             ),
         ),
         patch(
+            "impostor_bot.discord.commands.update_lobby_message",
+            new=AsyncMock(),
+        ) as update_lobby_mock,
+        patch(
             "impostor_bot.discord.commands.close_lobby_message",
             new=AsyncMock(),
-        ),
+        ) as close_lobby_mock,
         patch(
             "impostor_bot.discord.commands.LobbyView",
         ),
@@ -149,16 +171,20 @@ def test_start_handler_releases_game_when_dm_delivery_fails():
             handle_start(
                 interaction=interaction,
                 use_case=use_case,
-                release_use_case=release_use_case,
+                cancel_use_case=cancel_use_case,
             )
         )
 
-    release_use_case.execute.assert_awaited_once_with(
-        GameSessionKey(
+    cancel_use_case.execute.assert_awaited_once_with(
+        key=GameSessionKey(
             guild_id=100,
             channel_id=200,
-        )
+        ),
+        requester_id=1,
     )
+
+    close_lobby_mock.assert_awaited_once()
+    update_lobby_mock.assert_not_awaited()
 
     interaction.followup.send.assert_awaited_once()
 
@@ -172,7 +198,7 @@ def test_start_handler_reports_insufficient_players_with_followup():
         )
     )
 
-    release_use_case = SimpleNamespace(
+    cancel_use_case = SimpleNamespace(
         execute=AsyncMock(),
     )
 
@@ -182,17 +208,16 @@ def test_start_handler_reports_insufficient_players_with_followup():
         handle_start(
             interaction=interaction,
             use_case=use_case,
-            release_use_case=release_use_case,
+            cancel_use_case=cancel_use_case,
         )
     )
 
     interaction.response.defer.assert_awaited_once()
 
     interaction.followup.send.assert_awaited_once()
-
     interaction.response.send_message.assert_not_awaited()
 
-    release_use_case.execute.assert_not_awaited()
+    cancel_use_case.execute.assert_not_awaited()
 
 
 def test_start_handler_reports_non_host_with_followup():
@@ -204,19 +229,19 @@ def test_start_handler_reports_non_host_with_followup():
         )
     )
 
-    release_use_case = SimpleNamespace(
+    cancel_use_case = SimpleNamespace(
         execute=AsyncMock(),
     )
 
-    interaction = create_interaction()
-
-    interaction.user.id = 2
+    interaction = create_interaction(
+        user_id=2,
+    )
 
     asyncio.run(
         handle_start(
             interaction=interaction,
             use_case=use_case,
-            release_use_case=release_use_case,
+            cancel_use_case=cancel_use_case,
         )
     )
 
@@ -229,7 +254,6 @@ def test_start_handler_reports_non_host_with_followup():
     )
 
     interaction.followup.send.assert_awaited_once()
-
     interaction.response.send_message.assert_not_awaited()
 
-    release_use_case.execute.assert_not_awaited()
+    cancel_use_case.execute.assert_not_awaited()

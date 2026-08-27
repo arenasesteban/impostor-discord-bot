@@ -43,10 +43,12 @@ def build_lobby_started_message(game: Session) -> str:
         f"**Status:** Started\n"
         f"**Host:** <@{game.host_id}>\n"
         f"**Players:** {len(game.players)}\n\n"
-        f"{EMOJI_LOCK} This lobby is now closed.\n"
-        "The secret roles were sent by direct message."
+        f"{EMOJI_LOCK} Player registration is now closed.\n"
+        "The secret roles were sent by direct message.\n\n"
+        "**Host commands:**\n"
+        "`/impostor finish` — Finish the game.\n"
+        "`/impostor cancel` — Cancel the game."
     )
-
 
 def build_lobby_cancelled_message(game: Session) -> str:
     return (
@@ -106,6 +108,23 @@ def build_dm_error_message(failed_players: list[int]) -> str:
     )
 
 
+def build_lobby_finished_message(game: Session) -> str:
+    return (
+        f"{EMOJI_SUCCESS} **The Impostor Game Has Finished!**\n\n"
+        f"**Status:** Finished\n"
+        f"**Host:** <@{game.host_id}>\n"
+        f"**Players:** {len(game.players)}\n\n"
+        f"{EMOJI_LOCK} This game is now closed."
+    )
+
+
+def build_game_finished_message() -> str:
+    return (
+        f"{EMOJI_SUCCESS} "
+        "The game was finished by the host."
+    )
+
+
 def build_help_message() -> str:
     return (
         f"{EMOJI_GAME} **Help — The Impostor**\n\n"
@@ -114,7 +133,8 @@ def build_help_message() -> str:
         "`/impostor leave` — Leaves the game before it starts.\n"
         "`/impostor status` — Shows the host, game status, and joined players.\n"
         "`/impostor start` — Starts the game and sends the roles by direct message..\n"
-        "`/impostor cancel` — Cancels the open game.\n\n"
+        "`/impostor finish` — Finishes a started game.\n"
+        "`/impostor cancel` — Cancels an active game.\n"
     )
 
 
