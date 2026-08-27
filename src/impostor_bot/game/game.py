@@ -12,6 +12,7 @@ from impostor_bot.game.exceptions import (
     HostCannotLeaveError,
     PlayerNotFoundError,
     NotEnoughPlayersError,
+    InvalidGameStateError,
 )
 
 from impostor_bot.game.state import GameState
@@ -117,9 +118,17 @@ class Game:
         return roles
 
     def cancel(self) -> None:
-        if self.status == GameState.STARTED:
-            raise GameAlreadyStartedError(
-                "Cannot cancel a game that has already started."
+        if self.status not in (GameState.WAITING, GameState.STARTED):
+            raise InvalidGameStateError(
+                "Only a waiting or started game can be cancelled."
             )
 
         self.status = GameState.CANCELLED
+
+    def finish(self) -> None:
+        if self.status != GameState.STARTED:
+            raise InvalidGameStateError(
+                "Only a started game can be finished."
+            )
+
+        self.status = GameState.FINISHED
