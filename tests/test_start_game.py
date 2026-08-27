@@ -21,6 +21,14 @@ from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.game.state import GameState
 
+from impostor_bot.infrastructure.concurrency.asyncio_session_lock_manager import (
+    AsyncioSessionLockManager,
+)
+
+
+def create_lock_manager() -> AsyncioSessionLockManager:
+    return AsyncioSessionLockManager()
+
 
 class FakeGameRepository:
     def __init__(self, game: Game | None = None):
@@ -94,6 +102,7 @@ def test_start_game_assigns_deterministic_impostor():
         repository=repository,
         word_provider=word_provider,
         random_selector=selector,
+        lock_manager=create_lock_manager(),
     )
 
     result = asyncio.run(
@@ -123,6 +132,7 @@ def test_start_game_assigns_exactly_one_impostor():
         repository=FakeGameRepository(game),
         word_provider=FakeWordProvider("pizza"),
         random_selector=DeterministicRandomSelector(3),
+        lock_manager=create_lock_manager(),
     )
 
     result = asyncio.run(
@@ -146,6 +156,7 @@ def test_start_game_rejects_missing_game():
         repository=FakeGameRepository(),
         word_provider=FakeWordProvider(),
         random_selector=DeterministicRandomSelector(2),
+        lock_manager=create_lock_manager(),
     )
 
     with pytest.raises(GameNotFoundError):
@@ -167,6 +178,7 @@ def test_start_game_rejects_non_host():
         repository=FakeGameRepository(game),
         word_provider=word_provider,
         random_selector=selector,
+        lock_manager=create_lock_manager(),
     )
 
     with pytest.raises(NotGameHostError):
@@ -192,6 +204,7 @@ def test_start_game_rejects_insufficient_players_before_providers():
         repository=FakeGameRepository(game),
         word_provider=word_provider,
         random_selector=selector,
+        lock_manager=create_lock_manager(),
     )
 
     with pytest.raises(NotEnoughPlayersError):
@@ -219,6 +232,7 @@ def test_start_game_rejects_started_game():
         repository=FakeGameRepository(game),
         word_provider=FakeWordProvider(),
         random_selector=DeterministicRandomSelector(3),
+        lock_manager=create_lock_manager()
     )
 
     with pytest.raises(GameAlreadyStartedError):

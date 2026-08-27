@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from impostor_bot.application.exceptions import (
     GameNotFoundError,
-    NotGameHostError,
+    NotGameHostError
 )
 
 from impostor_bot.game.game import Game
@@ -10,6 +10,9 @@ from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.ports.game_repository import GameRepository
 from impostor_bot.ports.random_selector import RandomSelector
 from impostor_bot.ports.word_provider import WordProvider
+from impostor_bot.ports.session_lock_manager import (
+    SessionLockManager
+)
 
 
 @dataclass(frozen=True)
@@ -19,41 +22,43 @@ class StartGameResult:
 
 
 class StartGame:
-    def __init__(self, repository: GameRepository, word_provider: WordProvider, random_selector: RandomSelector) -> None:
+    def __init__(self, repository: GameRepository, word_provider: WordProvider, random_selector: RandomSelector, lock_manager: SessionLockManager) -> None:
         self.repository = repository
         self.word_provider = word_provider
         self.random_selector = random_selector
+        self.lock_manager = lock_manager
 
     async def execute(self, key: GameSessionKey, requester_id: int) -> StartGameResult:
-        game = await self.repository.get(key)
+        async with self.lock_manager.lock(key):
+            game = await self.repository.get(key)
 
-        if game is None:
-            raise GameNotFoundError(
-                "There is no open game in this channel."
+            if game is None:
+                raise GameNotFoundError(
+                    "There is no open game in this channel."
+                )
+
+            if requester_id != game.host_id:
+                raise NotGameHostError(
+                    "Only the host can start the game."
+                )
+
+            game.validate_start()
+
+            secret_word = await self.word_provider.get_word()
+
+            impostor_id = self.random_selector.choose(game.players)
+
+            roles = game.start_game(
+                secret_word=secret_word,
+                impostor_id=impostor_id
             )
 
-        if requester_id != game.host_id:
-            raise NotGameHostError(
-                "Only the host can start the game."
+            await self.repository.save(
+                key=key,
+                game=game
             )
 
-        game.validate_start()
-
-        secret_word = await self.word_provider.get_word()
-
-        impostor_id = self.random_selector.choose(game.players)
-
-        roles = game.start_game(
-            secret_word=secret_word,
-            impostor_id=impostor_id,
-        )
-
-        await self.repository.save(
-            key=key,
-            game=game,
-        )
-
-        return StartGameResult(
-            game=game,
-            roles=roles,
-        )
+            return StartGameResult(
+                game=game,
+                roles=roles
+            )

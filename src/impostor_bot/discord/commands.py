@@ -4,7 +4,7 @@ from discord import app_commands
 from impostor_bot.discord.lobby import (
     close_lobby_message,
     refresh_lobby_message,
-    update_lobby_message,
+    update_lobby_message
 )
 from impostor_bot.discord.messages import (
     build_game_created_message,
@@ -32,23 +32,22 @@ from impostor_bot.game.exceptions import (
     PlayerAlreadyJoinedError,
     PlayerNotFoundError,
     NotEnoughPlayersError,
-    InvalidGameStateError,
+    InvalidGameStateError
 )
 from impostor_bot.application.exceptions import (
     GameAlreadyExistsError,
     GameNotFoundError,
-    NotGameHostError,
+    NotGameHostError
 )
 
 from impostor_bot.discord.state import (
-    active_games,
     active_lobby_messages,
     game_repository,
+    session_lock_manager,
 )
 
 from impostor_bot.discord.context import (
-    get_channel_id,
-    get_game_session_key,
+    get_game_session_key
 )
 
 
@@ -60,13 +59,14 @@ from impostor_bot.application.join_game import JoinGame
 from impostor_bot.application.leave_game import LeaveGame
 from impostor_bot.application.cancel_game import CancelGame
 from impostor_bot.application.finish_game import FinishGame
+from impostor_bot.application.get_game_status import GetGameStatus
 
 
 from impostor_bot.infrastructure.random.python_random_selector import (
-    PythonRandomSelector,
+    PythonRandomSelector
 )
 from impostor_bot.infrastructure.word_providers.static_word_provider import (
-    StaticWordProvider,
+    StaticWordProvider
 )
 
 from impostor_bot.discord.role_delivery import deliver_roles
@@ -74,21 +74,47 @@ from impostor_bot.discord.role_delivery import deliver_roles
 
 word_provider = StaticWordProvider()
 random_selector = PythonRandomSelector()
+
+create_game_use_case = CreateGame(
+    repository=game_repository,
+    lock_manager=session_lock_manager,
+)
+
+join_game_use_case = JoinGame(
+    repository=game_repository,
+    lock_manager=session_lock_manager,
+)
+
+leave_game_use_case = LeaveGame(
+    repository=game_repository,
+    lock_manager=session_lock_manager,
+)
+
 start_game_use_case = StartGame(
     repository=game_repository,
     word_provider=word_provider,
     random_selector=random_selector,
+    lock_manager=session_lock_manager,
 )
-create_game_use_case = CreateGame(repository=game_repository)
-join_game_use_case = JoinGame(repository=game_repository)
-leave_game_use_case = LeaveGame(repository=game_repository)
-finish_game_use_case = FinishGame(repository=game_repository)
-cancel_game_use_case = CancelGame(repository=game_repository)
+
+finish_game_use_case = FinishGame(
+    repository=game_repository,
+    lock_manager=session_lock_manager,
+)
+
+cancel_game_use_case = CancelGame(
+    repository=game_repository,
+    lock_manager=session_lock_manager,
+)
+
+get_game_status_use_case = GetGameStatus(
+    repository=game_repository
+)
 
 
 impostor_group = app_commands.Group(
     name="impostor",
-    description="Commands for managing Impostor games.",
+    description="Commands for managing Impostor games."
 )
 
 
@@ -166,25 +192,10 @@ async def cancel(
     description="Shows the current game status.",
 )
 async def status(interaction: discord.Interaction):
-    try:
-        channel_id = get_channel_id(interaction)
-        game = active_games.get(channel_id)
-
-        if game is None:
-            await send_error(
-                interaction,
-                "There is no open game in this channel. "
-                "Use `/impostor create` to create one."
-            )
-            return
-
-        await interaction.response.send_message(
-            build_game_status_message(game),
-            ephemeral=True
-        )
-
-    except GameError as error:
-        await send_error(interaction, str(error))
+    await handle_status(
+        interaction=interaction,
+        use_case=get_game_status_use_case,
+    )
 
 
 @impostor_group.command(
@@ -528,4 +539,31 @@ async def handle_cancel(interaction: discord.Interaction, use_case: CancelGame) 
         await send_error(
             interaction,
             str(error)
+        )
+
+
+async def handle_status(interaction: discord.Interaction, use_case: GetGameStatus) -> None:
+    try:
+        key = get_game_session_key(interaction)
+
+        game = await use_case.execute(
+            key=key,
+        )
+
+        await interaction.response.send_message(
+            build_game_status_message(game),
+            ephemeral=True,
+        )
+
+    except GameNotFoundError:
+        await send_error(
+            interaction,
+            "There is no active game in this channel. "
+            "Use `/impostor create` to create one.",
+        )
+
+    except GameError as error:
+        await send_error(
+            interaction,
+            str(error),
         )
