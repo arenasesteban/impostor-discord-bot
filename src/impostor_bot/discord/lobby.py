@@ -30,13 +30,22 @@ async def fetch_lobby_message(client: discord.Client, channel_id: int) -> discor
         return None
 
 
-async def refresh_lobby_message(client: discord.Client, channel_id: int, game: Game, view: discord.ui.View) -> None:
+async def update_lobby_message(client: discord.Client, channel_id: int, content: str, view: discord.ui.View) -> None:
     message = await fetch_lobby_message(client, channel_id)
 
     if message is None:
         return
 
     await message.edit(
+        content=content,
+        view=view,
+    )
+
+
+async def refresh_lobby_message(client: discord.Client, channel_id: int, game: Game, view: discord.ui.View) -> None:
+    await update_lobby_message(
+        client=client,
+        channel_id=channel_id,
         content=build_game_created_message(game),
         view=view,
     )

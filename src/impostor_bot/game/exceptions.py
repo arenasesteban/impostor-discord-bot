@@ -20,3 +20,7 @@ class PlayerNotFoundError(GameError):
 
 class NotEnoughPlayersError(GameError):
     """Raised when there are not enough players to start the game."""
+
+
+class InvalidGameStateError(GameError):
+    """Raised when an operation is invalid for the current game state."""

@@ -2,6 +2,7 @@ import pytest
 
 from impostor_bot.game.session import Session
 from impostor_bot.game.game import Game
+from impostor_bot.game.state import GameState
 
 from impostor_bot.game.exceptions import (
     PlayerAlreadyJoinedError,
@@ -207,12 +208,14 @@ def test_cancel_open_game():
     assert game.status == STATUS_CANCELLED
 
 
-def test_cannot_cancel_started_game():
+def test_can_cancel_started_game():
     game = create_ready_game()
+
     game.start_game(
         secret_word="pizza",
         impostor_id=2,
     )
 
-    with pytest.raises(GameAlreadyStartedError):
-        game.cancel()
+    game.cancel()
+
+    assert game.status == GameState.CANCELLED
