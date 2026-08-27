@@ -1,4 +1,3 @@
-import random
 from dataclasses import dataclass, field
 
 from impostor_bot.constants import (
@@ -82,17 +81,14 @@ class Game:
                 f"{MIN_PLAYERS} players."
             )
 
-    def start_game(self, secret_word: str, impostor_id: int | None = None) -> None:
+    def start_game(self, secret_word: str, impostor_id: int) -> dict[int, str]:
         self.validate_start()
-
-        if impostor_id is None:
-            impostor_id = random.choice(self.players)
 
         if impostor_id not in self.players:
             raise GameError(
                 "The selected impostor must belong to the game."
             )
-        
+
         self.secret_word = secret_word
         self.impostor_id = impostor_id
         self.status = GameState.STARTED

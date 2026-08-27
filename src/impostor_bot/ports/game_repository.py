@@ -10,3 +10,6 @@ class GameRepository(Protocol):
 
     async def save(self, key: GameSessionKey, game: Game) -> None:
         ...
+
+    async def delete(self, key: GameSessionKey) -> None:
+        ...

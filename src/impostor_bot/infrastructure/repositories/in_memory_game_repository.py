@@ -13,3 +13,6 @@ class InMemoryGameRepository:
 
     async def save(self, key: GameSessionKey, game: Game) -> None:
         self._games[key.channel_id] = game
+
+    async def delete(self, key: GameSessionKey) -> None:
+        self._games.pop(key.channel_id, None)

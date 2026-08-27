@@ -119,8 +119,17 @@ def build_help_message() -> str:
 
 
 async def send_error(interaction: discord.Interaction, message: str, ephemeral: bool = True) -> None:
+    content = f"{EMOJI_WARNING} {message}"
+
+    if interaction.response.is_done():
+        await interaction.followup.send(
+            content,
+            ephemeral=ephemeral,
+        )
+        return
+
     await interaction.response.send_message(
-        f"{EMOJI_WARNING} {message}",
+        content,
         ephemeral=ephemeral,
     )
 
