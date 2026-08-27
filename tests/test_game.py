@@ -105,13 +105,19 @@ def test_game_cannot_start_with_less_than_minimum_players():
     game.add_player(2)
 
     with pytest.raises(NotEnoughPlayersError):
-        game.start_game(secret_word="pizza")
+        game.start_game(
+            secret_word="pizza",
+            impostor_id=2,
+        )
 
 
 def test_game_can_start_with_minimum_players():
     game = create_ready_game()
 
-    roles = game.start_game(secret_word="pizza")
+    roles = game.start_game(
+        secret_word="pizza",
+        impostor_id=2,
+    )
 
     assert game.status == STATUS_STARTED
     assert game.secret_word == "pizza"
@@ -122,7 +128,10 @@ def test_game_can_start_with_minimum_players():
 def test_only_one_impostor_is_generated():
     game = create_ready_game()
 
-    roles = game.start_game(secret_word="pizza")
+    roles = game.start_game(
+        secret_word="pizza",
+        impostor_id=2,
+    )
 
     impostors = [
         player_id
@@ -136,7 +145,10 @@ def test_only_one_impostor_is_generated():
 def test_impostor_does_not_receive_secret_word():
     game = create_ready_game()
 
-    roles = game.start_game(secret_word="pizza")
+    roles = game.start_game(
+        secret_word="pizza",
+        impostor_id=2,
+    )
 
     assert roles[game.impostor_id] == "IMPOSTOR"
 
@@ -144,7 +156,10 @@ def test_impostor_does_not_receive_secret_word():
 def test_normal_players_receive_secret_word():
     game = create_ready_game()
 
-    roles = game.start_game(secret_word="pizza")
+    roles = game.start_game(
+        secret_word="pizza",
+        impostor_id=2,
+    )
 
     for player_id, role in roles.items():
         if player_id != game.impostor_id:
@@ -154,14 +169,20 @@ def test_normal_players_receive_secret_word():
 def test_generate_roles_returns_one_role_per_player():
     game = create_ready_game()
 
-    roles = game.start_game(secret_word="pizza")
+    roles = game.start_game(
+        secret_word="pizza",
+        impostor_id=2,
+    )
 
     assert set(roles.keys()) == set(game.players)
 
 
 def test_cannot_add_player_after_game_started():
     game = create_ready_game()
-    game.start_game(secret_word="pizza")
+    game.start_game(
+        secret_word="pizza",
+        impostor_id=2,
+    )
 
     with pytest.raises(GameAlreadyStartedError):
         game.add_player(4)
@@ -169,7 +190,10 @@ def test_cannot_add_player_after_game_started():
 
 def test_cannot_remove_player_after_game_started():
     game = create_ready_game()
-    game.start_game(secret_word="pizza")
+    game.start_game(
+        secret_word="pizza",
+        impostor_id=2,
+    )
 
     with pytest.raises(GameAlreadyStartedError):
         game.remove_player(2)
@@ -185,7 +209,10 @@ def test_cancel_open_game():
 
 def test_cannot_cancel_started_game():
     game = create_ready_game()
-    game.start_game(secret_word="pizza")
+    game.start_game(
+        secret_word="pizza",
+        impostor_id=2,
+    )
 
     with pytest.raises(GameAlreadyStartedError):
         game.cancel()

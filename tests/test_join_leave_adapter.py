@@ -111,10 +111,14 @@ def test_join_handler_reports_missing_game():
         user=SimpleNamespace(id=2),
         client=SimpleNamespace(),
         response=SimpleNamespace(
+            is_done=lambda: False,
             send_message=AsyncMock(),
         ),
+        followup=SimpleNamespace(
+            send=AsyncMock(),
+        ),
     )
-
+    
     asyncio.run(
         handle_join(
             interaction=interaction,
