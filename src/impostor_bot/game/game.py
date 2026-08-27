@@ -70,20 +70,31 @@ class Game:
             and len(self.players) >= MIN_PLAYERS
         )
 
-    def start_game(self, secret_word: str) -> None:
+    def validate_start(self) -> None:
         if self.status != GameState.WAITING:
             raise GameAlreadyStartedError(
                 "Game has already started."
             )
-    
+
         if len(self.players) < MIN_PLAYERS:
             raise NotEnoughPlayersError(
                 f"Cannot start the game with less than "
                 f"{MIN_PLAYERS} players."
             )
+
+    def start_game(self, secret_word: str, impostor_id: int | None = None) -> None:
+        self.validate_start()
+
+        if impostor_id is None:
+            impostor_id = random.choice(self.players)
+
+        if impostor_id not in self.players:
+            raise GameError(
+                "The selected impostor must belong to the game."
+            )
         
         self.secret_word = secret_word
-        self.impostor_id = random.choice(self.players)
+        self.impostor_id = impostor_id
         self.status = GameState.STARTED
 
         return self.generate_roles()

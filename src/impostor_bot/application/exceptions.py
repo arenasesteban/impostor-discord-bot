@@ -16,3 +16,7 @@ class GameAlreadyExistsError(ApplicationError):
 
 class GameNotFoundError(ApplicationError):
     """Raised when no game exists for the requested session."""
+
+
+class NotGameHostError(ApplicationError):
+    """Raised when a non-host user attempts a host-only action."""
