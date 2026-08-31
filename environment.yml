@@ -1,10 +1,16 @@
 name: impostor-discord-bot-env
+
 channels:
-  - conda-forge
-  - defaults
+    - conda-forge
+    - defaults
+
 dependencies:
-  - python=3.12
-  - discord.py
-  - python-dotenv
-  - pytest
-  - pytest-cov
+    - python=3.12
+    - discord.py
+    - python-dotenv
+    - pytest
+    - pytest-cov
+    - pytest-asyncio
+    - sqlalchemy>=2.0,<2.1
+    - asyncpg
+    - alembic   
