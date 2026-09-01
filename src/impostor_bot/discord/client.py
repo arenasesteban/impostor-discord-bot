@@ -28,8 +28,13 @@ class ImpostorBot(discord.Client):
 
         self._startup_hooks = list(startup_hooks)
         self._shutdown_hooks = list(shutdown_hooks)
+        self._startup_completed = False
+        self._shutdown_completed = False
 
     async def setup_hook(self) -> None:
+        if self._startup_completed:
+            return
+
         for hook in self._startup_hooks:
             await hook()
 
@@ -37,11 +42,18 @@ class ImpostorBot(discord.Client):
 
         await self.tree.sync()
 
+        self._startup_completed = True
+
     async def close(self) -> None:
         try:
             await super().close()
 
         finally:
+            if self._shutdown_completed:
+                return
+
+            self._shutdown_completed = True
+
             for hook in reversed(self._shutdown_hooks):
                 await hook()
 

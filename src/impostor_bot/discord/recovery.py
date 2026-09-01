@@ -144,6 +144,6 @@ class RecoverGameSessions:
     async def _remove_stale(self, key: GameSessionKey) -> None:
         self._lobby_cache.pop(key, None)
 
-        await self._lobby_repository.delete(key)
-
         await self._game_repository.delete(key)
+
+        await self._lobby_repository.delete(key)

@@ -6,6 +6,7 @@ from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.infrastructure.repositories.in_memory_game_repository import (
     InMemoryGameRepository,
 )
+from impostor_bot.game.state import GameState
 
 
 class FakeRecoveryGateway:
@@ -724,3 +725,246 @@ async def test_recovery_handles_multiple_sessions_independently():
         )
         is None
     )
+
+
+@pytest.mark.asyncio
+async def test_waiting_recovery_is_idempotent():
+    key = GameSessionKey(
+        guild_id=100,
+        channel_id=200,
+    )
+
+    game_repository = InMemoryGameRepository()
+
+    await game_repository.save(
+        key=key,
+        game=Game.create(host_id=1),
+    )
+
+    lobby_repository = FakeLobbyMessageRepository()
+
+    await lobby_repository.save(
+        key=key,
+        message_id=999,
+    )
+
+    gateway = FakeRecoveryGateway(
+        existing_channels={key},
+        existing_lobbies={
+            (key, 999),
+        },
+    )
+
+    cache = {}
+
+    recovery = RecoverGameSessions(
+        game_repository=game_repository,
+        lobby_repository=lobby_repository,
+        gateway=gateway,
+        lobby_cache=cache,
+    )
+
+    first = await recovery.execute()
+    second = await recovery.execute()
+
+    assert first.discovered == 1
+    assert first.restored_waiting == 1
+    assert first.stale_removed == 0
+
+    assert second.discovered == 1
+    assert second.restored_waiting == 1
+    assert second.stale_removed == 0
+
+    assert cache == {
+        key: 999,
+    }
+
+    assert (
+        await game_repository.get(key)
+        is not None
+    )
+
+    assert (
+        await lobby_repository.get(key)
+        == 999
+    )
+
+
+@pytest.mark.asyncio
+async def test_stale_cleanup_is_idempotent():
+    key = GameSessionKey(
+        guild_id=100,
+        channel_id=200,
+    )
+
+    game_repository = InMemoryGameRepository()
+
+    await game_repository.save(
+        key=key,
+        game=Game.create(host_id=1),
+    )
+
+    lobby_repository = FakeLobbyMessageRepository()
+
+    await lobby_repository.save(
+        key=key,
+        message_id=999,
+    )
+
+    gateway = FakeRecoveryGateway(
+        existing_channels={key},
+        existing_lobbies=set(),
+    )
+
+    cache = {}
+
+    recovery = RecoverGameSessions(
+        game_repository=game_repository,
+        lobby_repository=lobby_repository,
+        gateway=gateway,
+        lobby_cache=cache,
+    )
+
+    first = await recovery.execute()
+    second = await recovery.execute()
+
+    assert first.discovered == 1
+    assert first.stale_removed == 1
+
+    assert second.discovered == 0
+    assert second.stale_removed == 0
+
+    assert (
+        await game_repository.get(key)
+        is None
+    )
+
+    assert (
+        await lobby_repository.get(key)
+        is None
+    )
+
+    assert cache == {}
+
+
+@pytest.mark.asyncio
+async def test_detached_started_game_is_stable_across_recovery_runs():
+    key = GameSessionKey(
+        guild_id=100,
+        channel_id=200,
+    )
+
+    game = Game.create(host_id=1)
+    game.add_player(2)
+    game.add_player(3)
+
+    game.start_game(
+        secret_word="pizza",
+        impostor_id=2,
+    )
+
+    game_repository = InMemoryGameRepository()
+
+    await game_repository.save(
+        key=key,
+        game=game,
+    )
+
+    lobby_repository = FakeLobbyMessageRepository()
+
+    await lobby_repository.save(
+        key=key,
+        message_id=999,
+    )
+
+    gateway = FakeRecoveryGateway(
+        existing_channels={key},
+        existing_lobbies=set(),
+    )
+
+    cache = {}
+
+    recovery = RecoverGameSessions(
+        game_repository=game_repository,
+        lobby_repository=lobby_repository,
+        gateway=gateway,
+        lobby_cache=cache,
+    )
+
+    first = await recovery.execute()
+    second = await recovery.execute()
+
+    assert first.discovered == 1
+    assert first.restored_started == 1
+    assert first.detached_lobbies == 1
+
+    assert second.discovered == 1
+    assert second.restored_started == 1
+    assert second.detached_lobbies == 0
+
+    stored_game = await game_repository.get(
+        key
+    )
+
+    assert stored_game is not None
+    assert stored_game.status == GameState.STARTED
+
+    assert (
+        await lobby_repository.get(key)
+        is None
+    )
+
+    assert cache == {}
+
+
+@pytest.mark.asyncio
+async def test_recovery_rebuilds_cache_from_persisted_state():
+    valid_key = GameSessionKey(
+        guild_id=100,
+        channel_id=200,
+    )
+
+    obsolete_key = GameSessionKey(
+        guild_id=999,
+        channel_id=999,
+    )
+
+    game_repository = InMemoryGameRepository()
+
+    await game_repository.save(
+        key=valid_key,
+        game=Game.create(host_id=1),
+    )
+
+    lobby_repository = FakeLobbyMessageRepository()
+
+    await lobby_repository.save(
+        key=valid_key,
+        message_id=999,
+    )
+
+    gateway = FakeRecoveryGateway(
+        existing_channels={valid_key},
+        existing_lobbies={
+            (valid_key, 999),
+        },
+    )
+
+    cache = {
+        obsolete_key: 12345,
+    }
+
+    recovery = RecoverGameSessions(
+        game_repository=game_repository,
+        lobby_repository=lobby_repository,
+        gateway=gateway,
+        lobby_cache=cache,
+    )
+
+    await recovery.execute()
+
+    assert cache == {
+        valid_key: 999,
+    }
+
+    assert obsolete_key not in cache
