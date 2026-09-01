@@ -144,9 +144,8 @@ async def handle_leave_button(
 
 
 class LobbyView(discord.ui.View):
-    def __init__(self, channel_id: int, disabled: bool = False):
-        super().__init__(timeout=1800)
-        self.channel_id = channel_id
+    def __init__(self, disabled: bool = False) -> None:
+        super().__init__(timeout=None)
 
         if disabled:
             self.disable_all_buttons()
@@ -160,8 +159,9 @@ class LobbyView(discord.ui.View):
         label="Join",
         style=discord.ButtonStyle.secondary,
         row=0,
+        custom_id="impostor:lobby:join:v1",
     )
-    async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         await handle_join_button(
             interaction=interaction,
             view=self,
@@ -172,8 +172,9 @@ class LobbyView(discord.ui.View):
         label="Leave",
         style=discord.ButtonStyle.secondary,
         row=0,
+        custom_id="impostor:lobby:leave:v1",
     )
-    async def leave_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def leave_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         await handle_leave_button(
             interaction=interaction,
             view=self,

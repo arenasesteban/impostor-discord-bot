@@ -30,32 +30,32 @@ class GameRecord(Base):
 
     guild_id: Mapped[int] = mapped_column(
         BigInteger,
-        primary_key=True,
+        primary_key=True
     )
 
     channel_id: Mapped[int] = mapped_column(
         BigInteger,
-        primary_key=True,
+        primary_key=True
     )
 
     host_id: Mapped[int] = mapped_column(
         BigInteger,
-        nullable=False,
+        nullable=False
     )
 
     state: Mapped[str] = mapped_column(
         String(32),
-        nullable=False,
+        nullable=False
     )
 
     secret_word: Mapped[str | None] = mapped_column(
         Text,
-        nullable=True,
+        nullable=True
     )
 
     impostor_id: Mapped[int | None] = mapped_column(
         BigInteger,
-        nullable=True,
+        nullable=True
     )
 
     players: Mapped[list["GamePlayerRecord"]] = relationship(
@@ -63,13 +63,13 @@ class GameRecord(Base):
         back_populates="game",
         cascade="all, delete-orphan",
         order_by="GamePlayerRecord.position",
-        lazy="selectin",
+        lazy="selectin"
     )
 
     __table_args__ = (
         CheckConstraint(
             f"state IN ({_VALID_STATES_SQL})",
-            name="ck_games_state",
+            name="ck_games_state"
         ),
     )
 
@@ -79,39 +79,67 @@ class GamePlayerRecord(Base):
 
     guild_id: Mapped[int] = mapped_column(
         BigInteger,
-        primary_key=True,
+        primary_key=True
     )
 
     channel_id: Mapped[int] = mapped_column(
         BigInteger,
-        primary_key=True,
+        primary_key=True
     )
 
     player_id: Mapped[int] = mapped_column(
         BigInteger,
-        primary_key=True,
+        primary_key=True
     )
 
     position: Mapped[int] = mapped_column(
         Integer,
-        nullable=False,
+        nullable=False
     )
 
     game: Mapped[GameRecord] = relationship(
         "GameRecord",
-        back_populates="players",
+        back_populates="players"
     )
 
     __table_args__ = (
         ForeignKeyConstraint(
             ["guild_id", "channel_id"],
             ["games.guild_id", "games.channel_id"],
-            ondelete="CASCADE",
+            ondelete="CASCADE"
         ),
         UniqueConstraint(
             "guild_id",
             "channel_id",
             "position",
-            name="uq_game_players_position",
+            name="uq_game_players_position"
+        ),
+    )
+
+
+class DiscordSessionRecord(Base):
+    __tablename__ = "discord_game_sessions"
+
+    guild_id: Mapped[int] = mapped_column(
+        BigInteger,
+        primary_key=True
+    )
+
+    channel_id: Mapped[int] = mapped_column(
+        BigInteger,
+        primary_key=True
+    )
+
+    lobby_message_id: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        unique=True
+    )
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["guild_id", "channel_id"],
+            ["games.guild_id", "games.channel_id"],
+            ondelete="CASCADE"
         ),
     )

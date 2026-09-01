@@ -289,3 +289,72 @@ async def test_get_returns_none_for_missing_game(
     )
 
     assert game is None
+
+
+@pytest.mark.asyncio
+async def test_list_active_returns_persisted_games(
+    postgres_session_factory,
+):
+    repository = PostgresGameRepository(
+        postgres_session_factory
+    )
+
+    key_a = GameSessionKey(
+        guild_id=100,
+        channel_id=200,
+    )
+
+    key_b = GameSessionKey(
+        guild_id=101,
+        channel_id=200,
+    )
+
+    game_a = Game.create(host_id=1)
+    game_a.add_player(10)
+
+    game_b = Game.create(host_id=2)
+    game_b.add_player(20)
+
+    await repository.save(
+        key=key_a,
+        game=game_a,
+    )
+
+    await repository.save(
+        key=key_b,
+        game=game_b,
+    )
+
+    sessions = await repository.list_active()
+
+    sessions_by_key = {
+        key: game
+        for key, game in sessions
+    }
+
+    assert set(sessions_by_key) == {
+        key_a,
+        key_b,
+    }
+
+    restored_a = sessions_by_key[key_a]
+    restored_b = sessions_by_key[key_b]
+
+    assert restored_a.host_id == 1
+    assert restored_a.players == [1, 10]
+
+    assert restored_b.host_id == 2
+    assert restored_b.players == [2, 20]
+
+
+@pytest.mark.asyncio
+async def test_list_active_returns_empty_list_when_no_games_exist(
+    postgres_session_factory,
+):
+    repository = PostgresGameRepository(
+        postgres_session_factory
+    )
+
+    sessions = await repository.list_active()
+
+    assert sessions == []

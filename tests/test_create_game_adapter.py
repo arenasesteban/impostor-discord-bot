@@ -2,10 +2,25 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+import pytest
+
 from impostor_bot.discord.commands import handle_create
-from impostor_bot.discord.state import active_lobby_messages
+from impostor_bot.discord.state import (
+    active_lobby_messages,
+)
 from impostor_bot.game.game import Game
-from impostor_bot.game.session_key import GameSessionKey
+from impostor_bot.game.session_key import (
+    GameSessionKey,
+)
+
+
+@pytest.fixture(autouse=True)
+def clear_active_lobby_messages():
+    active_lobby_messages.clear()
+
+    yield
+
+    active_lobby_messages.clear()
 
 
 def test_create_handler_maps_discord_data_to_use_case():
@@ -13,6 +28,10 @@ def test_create_handler_maps_discord_data_to_use_case():
         execute=AsyncMock(
             return_value=Game.create(host_id=300)
         )
+    )
+
+    lobby_repository = SimpleNamespace(
+        save=AsyncMock(),
     )
 
     interaction = SimpleNamespace(
@@ -31,17 +50,82 @@ def test_create_handler_maps_discord_data_to_use_case():
         handle_create(
             interaction=interaction,
             use_case=use_case,
+            lobby_repository=lobby_repository,
         )
     )
 
+    key = GameSessionKey(
+        guild_id=100,
+        channel_id=200,
+    )
+
     use_case.execute.assert_awaited_once_with(
-        key=GameSessionKey(
-            guild_id=100,
-            channel_id=200,
-        ),
+        key=key,
         host_id=300,
     )
 
-    assert active_lobby_messages[200] == 999
+    lobby_repository.save.assert_awaited_once_with(
+        key=key,
+        message_id=999,
+    )
 
-    active_lobby_messages.pop(200, None)
+
+def test_create_handler_persists_lobby_message_metadata():
+    game = Game.create(
+        host_id=1
+    )
+
+    use_case = SimpleNamespace(
+        execute=AsyncMock(
+            return_value=game
+        )
+    )
+
+    lobby_repository = SimpleNamespace(
+        save=AsyncMock()
+    )
+
+    message = SimpleNamespace(
+        id=999
+    )
+
+    interaction = SimpleNamespace(
+        guild_id=100,
+        channel=SimpleNamespace(
+            id=200,
+        ),
+        user=SimpleNamespace(
+            id=1,
+        ),
+        response=SimpleNamespace(
+            send_message=AsyncMock(),
+        ),
+        original_response=AsyncMock(
+            return_value=message
+        ),
+    )
+
+    asyncio.run(
+        handle_create(
+            interaction=interaction,
+            use_case=use_case,
+            lobby_repository=lobby_repository,
+        )
+    )
+
+    key = GameSessionKey(
+        guild_id=100,
+        channel_id=200,
+    )
+
+    use_case.execute.assert_awaited_once_with(
+        key=key,
+        host_id=1,
+    )
+
+    lobby_repository.save.assert_awaited_once_with(
+        key=key,
+        message_id=999,
+    )
+
+    assert active_lobby_messages[key] == 999

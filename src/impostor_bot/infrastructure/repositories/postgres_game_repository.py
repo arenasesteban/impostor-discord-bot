@@ -32,7 +32,7 @@ class PostgresGameRepository:
                 )
                 .where(
                     GameRecord.guild_id == key.guild_id,
-                    GameRecord.channel_id == key.channel_id,
+                    GameRecord.channel_id == key.channel_id
                 )
             )
 
@@ -48,13 +48,7 @@ class PostgresGameRepository:
     async def save(self, key: GameSessionKey, game: Game) -> None:
         async with self._session_factory() as session:
             async with session.begin():
-                record = await session.get(
-                    GameRecord,
-                    (
-                        key.guild_id,
-                        key.channel_id,
-                    ),
-                )
+                record = await session.get(GameRecord, (key.guild_id, key.channel_id),)
 
                 if record is None:
                     record = GameRecord(
@@ -102,3 +96,36 @@ class PostgresGameRepository:
                         GameRecord.channel_id == key.channel_id,
                     )
                 )
+
+
+    async def list_active(self) -> list[tuple[GameSessionKey, Game]]:
+        async with self._session_factory() as session:
+            statement = (
+                select(GameRecord)
+                .options(
+                    selectinload(
+                        GameRecord.players
+                    )
+                )
+                .order_by(
+                    GameRecord.guild_id,
+                    GameRecord.channel_id,
+                )
+            )
+
+            result = await session.execute(statement)
+
+            records = result.scalars().all()
+
+            return [
+                (
+                    GameSessionKey(
+                        guild_id=record.guild_id,
+                        channel_id=record.channel_id,
+                    ),
+                    game_record_to_domain(
+                        record
+                    ),
+                )
+                for record in records
+            ]

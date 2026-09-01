@@ -43,8 +43,11 @@ from impostor_bot.application.exceptions import (
 from impostor_bot.discord.state import (
     active_lobby_messages,
     game_repository,
+    lobby_message_repository,
     session_lock_manager,
 )
+from impostor_bot.game.session_key import GameSessionKey
+from impostor_bot.game.game import Game
 
 from impostor_bot.discord.context import (
     get_game_session_key
@@ -70,6 +73,8 @@ from impostor_bot.infrastructure.word_providers.static_word_provider import (
 )
 
 from impostor_bot.discord.role_delivery import deliver_roles
+
+from impostor_bot.ports.lobby_message_repository import LobbyMessageRepository
 
 
 word_provider = StaticWordProvider()
@@ -125,7 +130,8 @@ impostor_group = app_commands.Group(
 async def create(interaction: discord.Interaction):
     await handle_create(
         interaction=interaction,
-        use_case=create_game_use_case
+        use_case=create_game_use_case,
+        lobby_repository=lobby_message_repository
     )
 
 
@@ -209,7 +215,7 @@ async def help_command(interaction: discord.Interaction):
     )
 
 
-async def handle_create(interaction: discord.Interaction, use_case: CreateGame) -> None:
+async def handle_create(interaction: discord.Interaction, use_case: CreateGame, lobby_repository: LobbyMessageRepository) -> None:
     try:
         key = get_game_session_key(interaction)
 
@@ -220,12 +226,17 @@ async def handle_create(interaction: discord.Interaction, use_case: CreateGame) 
 
         await interaction.response.send_message(
             content=build_game_created_message(game),
-            view=LobbyView(channel_id=key.channel_id)
+            view=LobbyView()
         )
 
         message = await interaction.original_response()
 
-        active_lobby_messages[key.channel_id] = message.id
+        await lobby_repository.save(
+            key=key,
+            message_id=message.id
+        )
+
+        active_lobby_messages[key] = message.id
 
     except GameAlreadyExistsError:
         await send_error(
@@ -251,11 +262,9 @@ async def handle_join(interaction: discord.Interaction, use_case: JoinGame) -> N
 
         await refresh_lobby_message(
             client=interaction.client,
-            channel_id=key.channel_id,
+            key=key,
             game=game,
-            view=LobbyView(
-                channel_id=key.channel_id
-            )
+            view=LobbyView()
         )
 
         await interaction.response.send_message(
@@ -302,11 +311,9 @@ async def handle_leave(interaction: discord.Interaction, use_case: LeaveGame) ->
 
         await refresh_lobby_message(
             client=interaction.client,
-            channel_id=key.channel_id,
+            key=key,
             game=game,
-            view=LobbyView(
-                channel_id=key.channel_id
-            )
+            view=LobbyView()
         )
 
         await interaction.response.send_message(
@@ -366,7 +373,6 @@ async def handle_start(interaction: discord.Interaction, use_case: StartGame, ca
         )
 
         disabled_view = LobbyView(
-            channel_id=key.channel_id,
             disabled=True
         )
 
@@ -378,7 +384,7 @@ async def handle_start(interaction: discord.Interaction, use_case: StartGame, ca
 
             await close_lobby_message(
                 client=interaction.client,
-                channel_id=key.channel_id,
+                key=key,
                 content=build_lobby_cancelled_message(cancelled_game),
                 view=disabled_view
             )
@@ -392,7 +398,7 @@ async def handle_start(interaction: discord.Interaction, use_case: StartGame, ca
 
         await update_lobby_message(
             client=interaction.client,
-            channel_id=key.channel_id,
+            key=key,
             content=build_lobby_started_message(result.game),
             view=disabled_view
         )
@@ -450,13 +456,12 @@ async def handle_finish(interaction: discord.Interaction, use_case: FinishGame) 
         )
 
         disabled_view = LobbyView(
-            channel_id=key.channel_id,
             disabled=True
         )
 
         await close_lobby_message(
             client=interaction.client,
-            channel_id=key.channel_id,
+            key=key,
             content=build_lobby_finished_message(game),
             view=disabled_view
         )
@@ -501,13 +506,12 @@ async def handle_cancel(interaction: discord.Interaction, use_case: CancelGame) 
         )
 
         disabled_view = LobbyView(
-            channel_id=key.channel_id,
             disabled=True
         )
 
         await close_lobby_message(
             client=interaction.client,
-            channel_id=key.channel_id,
+            key=key,
             content=build_lobby_cancelled_message(game),
             view=disabled_view
         )
