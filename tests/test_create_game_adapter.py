@@ -34,15 +34,38 @@ def test_create_handler_maps_discord_data_to_use_case():
         save=AsyncMock(),
     )
 
+    message = SimpleNamespace(
+        id=999,
+    )
+
+    response_done = False
+
+
+    async def defer(*args, **kwargs):
+        nonlocal response_done
+        response_done = True
+
+
     interaction = SimpleNamespace(
         guild_id=100,
-        channel=SimpleNamespace(id=200),
-        user=SimpleNamespace(id=300),
-        response=SimpleNamespace(
-            send_message=AsyncMock()
+        channel=SimpleNamespace(
+            id=200,
         ),
-        original_response=AsyncMock(
-            return_value=SimpleNamespace(id=999)
+        user=SimpleNamespace(
+            id=300,
+        ),
+        response=SimpleNamespace(
+            defer=AsyncMock(
+                side_effect=defer,
+            ),
+            is_done=lambda: response_done,
+            send_message=AsyncMock(),
+        ),
+        followup=SimpleNamespace(
+            send=AsyncMock(),
+        ),
+        edit_original_response=AsyncMock(
+            return_value=message,
         ),
     )
 
@@ -53,6 +76,12 @@ def test_create_handler_maps_discord_data_to_use_case():
             lobby_repository=lobby_repository,
         )
     )
+
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.edit_original_response.assert_awaited_once()
 
     key = GameSessionKey(
         guild_id=100,
@@ -86,8 +115,16 @@ def test_create_handler_persists_lobby_message_metadata():
     )
 
     message = SimpleNamespace(
-        id=999
+        id=999,
     )
+
+    response_done = False
+
+
+    async def defer(*args, **kwargs):
+        nonlocal response_done
+        response_done = True
+
 
     interaction = SimpleNamespace(
         guild_id=100,
@@ -98,10 +135,17 @@ def test_create_handler_persists_lobby_message_metadata():
             id=1,
         ),
         response=SimpleNamespace(
+            defer=AsyncMock(
+                side_effect=defer,
+            ),
+            is_done=lambda: response_done,
             send_message=AsyncMock(),
         ),
-        original_response=AsyncMock(
-            return_value=message
+        followup=SimpleNamespace(
+            send=AsyncMock(),
+        ),
+        edit_original_response=AsyncMock(
+            return_value=message,
         ),
     )
 

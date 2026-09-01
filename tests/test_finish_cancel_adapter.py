@@ -14,6 +14,9 @@ from impostor_bot.game.exceptions import InvalidGameStateError
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.game.state import GameState
+from impostor_bot.discord.messages import (
+    build_game_cancelled_message,
+)
 
 
 def create_waiting_game() -> Game:
@@ -54,7 +57,15 @@ def create_cancelled_started_game() -> Game:
     return game
 
 
-def create_interaction(user_id: int = 1):
+def create_interaction(
+    user_id: int = 1,
+):
+    response_done = False
+
+    async def defer(*args, **kwargs):
+        nonlocal response_done
+        response_done = True
+
     return SimpleNamespace(
         guild_id=100,
         channel=SimpleNamespace(
@@ -65,14 +76,16 @@ def create_interaction(user_id: int = 1):
         ),
         client=SimpleNamespace(),
         response=SimpleNamespace(
-            is_done=lambda: False,
+            defer=AsyncMock(
+                side_effect=defer,
+            ),
+            is_done=lambda: response_done,
             send_message=AsyncMock(),
         ),
         followup=SimpleNamespace(
             send=AsyncMock(),
         ),
     )
-
 
 def test_finish_handler_maps_interaction_and_closes_lobby():
     game = create_finished_game()
@@ -113,8 +126,11 @@ def test_finish_handler_maps_interaction_and_closes_lobby():
 
     close_lobby_mock.assert_awaited_once()
 
-    interaction.response.send_message.assert_awaited_once()
-    interaction.followup.send.assert_not_awaited()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+    interaction.followup.send.assert_awaited_once()
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_finish_handler_rejects_non_host():
@@ -151,7 +167,13 @@ def test_finish_handler_rejects_non_host():
 
     close_lobby_mock.assert_not_awaited()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once()
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_finish_handler_rejects_invalid_state():
@@ -178,7 +200,13 @@ def test_finish_handler_rejects_invalid_state():
 
     close_lobby_mock.assert_not_awaited()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once()
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_finish_handler_reports_missing_game():
@@ -205,7 +233,13 @@ def test_finish_handler_reports_missing_game():
 
     close_lobby_mock.assert_not_awaited()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once()
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_cancel_handler_cancels_waiting_game():
@@ -247,7 +281,16 @@ def test_cancel_handler_cancels_waiting_game():
 
     close_lobby_mock.assert_awaited_once()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once_with(
+        build_game_cancelled_message(),
+        ephemeral=False,
+    )
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_cancel_handler_cancels_started_game():
@@ -289,7 +332,16 @@ def test_cancel_handler_cancels_started_game():
 
     close_lobby_mock.assert_awaited_once()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once_with(
+        build_game_cancelled_message(),
+        ephemeral=False,
+    )
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_cancel_handler_rejects_non_host():
@@ -326,7 +378,13 @@ def test_cancel_handler_rejects_non_host():
 
     close_lobby_mock.assert_not_awaited()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once()
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_cancel_handler_reports_missing_game():
@@ -353,6 +411,12 @@ def test_cancel_handler_reports_missing_game():
 
     close_lobby_mock.assert_not_awaited()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once()
+
+    interaction.response.send_message.assert_not_awaited()
 
 

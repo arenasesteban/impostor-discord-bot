@@ -1,5 +1,7 @@
 import discord
 
+from impostor_bot.game.session import Session
+
 from impostor_bot.constants import (
     EMOJI_DICE,
     EMOJI_DOOR,
@@ -10,7 +12,6 @@ from impostor_bot.constants import (
     EMOJI_SUCCESS,
     EMOJI_WARNING,
 )
-from impostor_bot.game.session import Session
 
 
 def format_player_list(player_ids: list[int]) -> str:
@@ -135,6 +136,14 @@ def build_help_message() -> str:
         "`/impostor start` — Starts the game and sends the roles by direct message..\n"
         "`/impostor finish` — Finishes a started game.\n"
         "`/impostor cancel` — Cancels an active game.\n"
+    )
+
+
+def build_service_error_message() -> str:
+    return (
+        "The bot could not complete the operation "
+        "because of an internal service problem. "
+        "Please try again later."
     )
 
 

@@ -9,18 +9,14 @@ from sqlalchemy.ext.asyncio import (
 AsyncSessionFactory = async_sessionmaker[AsyncSession]
 
 
-def create_database_engine(
-    database_url: str,
-) -> AsyncEngine:
+def create_database_engine(database_url: str) -> AsyncEngine:
     return create_async_engine(
         database_url,
         pool_pre_ping=True,
     )
 
 
-def create_session_factory(
-    engine: AsyncEngine,
-) -> AsyncSessionFactory:
+def create_session_factory(engine: AsyncEngine) -> AsyncSessionFactory:
     return async_sessionmaker(
         bind=engine,
         class_=AsyncSession,

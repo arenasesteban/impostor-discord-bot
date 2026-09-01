@@ -9,17 +9,29 @@ from impostor_bot.game.session_key import GameSessionKey
 
 
 def create_interaction(
-    *,
-    guild_id: int = 100,
-    channel_id: int = 200,
+    guild_id: int,
+    channel_id: int,
 ):
+    response_done = False
+
+    async def defer(*args, **kwargs):
+        nonlocal response_done
+        response_done = True
+
     return SimpleNamespace(
         guild_id=guild_id,
         channel=SimpleNamespace(
             id=channel_id,
         ),
         response=SimpleNamespace(
+            defer=AsyncMock(
+                side_effect=defer,
+            ),
+            is_done=lambda: response_done,
             send_message=AsyncMock(),
+        ),
+        followup=SimpleNamespace(
+            send=AsyncMock(),
         ),
     )
 
@@ -52,7 +64,14 @@ def test_status_handler_uses_full_game_session_key():
         ),
     )
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        ephemeral=True,
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once()
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_status_handler_preserves_guild_id():
@@ -82,3 +101,10 @@ def test_status_handler_preserves_guild_id():
             channel_id=200,
         ),
     )
+
+    interaction.response.defer.assert_awaited_once_with(
+        ephemeral=True,
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once()

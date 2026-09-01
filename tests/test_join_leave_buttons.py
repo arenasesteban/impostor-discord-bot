@@ -11,6 +11,39 @@ from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
 
 
+def create_interaction(
+    user_id: int = 2,
+):
+    response_done = False
+
+    async def defer(*args, **kwargs):
+        nonlocal response_done
+        response_done = True
+
+    return SimpleNamespace(
+        guild_id=100,
+        channel=SimpleNamespace(
+            id=200,
+        ),
+        user=SimpleNamespace(
+            id=user_id,
+        ),
+        response=SimpleNamespace(
+            defer=AsyncMock(
+                side_effect=defer,
+            ),
+            is_done=lambda: response_done,
+            send_message=AsyncMock(),
+        ),
+        followup=SimpleNamespace(
+            send=AsyncMock(),
+        ),
+        message=SimpleNamespace(
+            edit=AsyncMock(),
+        ),
+    )
+
+
 def test_join_button_maps_interaction_to_use_case():
     game = Game.create(host_id=1)
     game.add_player(2)
@@ -21,18 +54,7 @@ def test_join_button_maps_interaction_to_use_case():
         )
     )
 
-    interaction = SimpleNamespace(
-        guild_id=100,
-        channel=SimpleNamespace(id=200),
-        user=SimpleNamespace(id=2),
-        response=SimpleNamespace(
-            edit_message=AsyncMock(),
-            send_message=AsyncMock(),
-        ),
-        followup=SimpleNamespace(
-            send=AsyncMock(),
-        ),
-    )
+    interaction = create_interaction()
 
     view = SimpleNamespace()
 
@@ -53,8 +75,13 @@ def test_join_button_maps_interaction_to_use_case():
 
     assert call.kwargs["player"].id == 2
 
-    interaction.response.edit_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once()
+
+    interaction.message.edit.assert_awaited_once()
+
     interaction.followup.send.assert_awaited_once()
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_leave_button_maps_interaction_to_use_case():
@@ -67,18 +94,7 @@ def test_leave_button_maps_interaction_to_use_case():
         )
     )
 
-    interaction = SimpleNamespace(
-        guild_id=100,
-        channel=SimpleNamespace(id=200),
-        user=SimpleNamespace(id=2),
-        response=SimpleNamespace(
-            edit_message=AsyncMock(),
-            send_message=AsyncMock(),
-        ),
-        followup=SimpleNamespace(
-            send=AsyncMock(),
-        ),
-    )
+    interaction = create_interaction()
 
     view = SimpleNamespace()
 
@@ -99,5 +115,10 @@ def test_leave_button_maps_interaction_to_use_case():
 
     assert call.kwargs["player"].id == 2
 
-    interaction.response.edit_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once()
+
+    interaction.message.edit.assert_awaited_once()
+
     interaction.followup.send.assert_awaited_once()
+
+    interaction.response.send_message.assert_not_awaited()

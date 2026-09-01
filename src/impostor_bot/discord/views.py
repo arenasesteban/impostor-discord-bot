@@ -1,5 +1,11 @@
 import discord
 
+from impostor_bot.discord.context import get_game_session_key
+from impostor_bot.discord.error_handling import handle_infrastructure_error
+from impostor_bot.discord.state import (
+    game_repository,
+    session_lock_manager,
+)
 from impostor_bot.discord.messages import (
     build_game_created_message,
     build_player_joined_message,
@@ -7,6 +13,11 @@ from impostor_bot.discord.messages import (
     send_error,
 )
 
+from impostor_bot.application.exceptions import GameNotFoundError
+from impostor_bot.application.join_game import JoinGame
+from impostor_bot.application.leave_game import LeaveGame
+
+from impostor_bot.game.player import Player
 from impostor_bot.game.exceptions import (
     GameAlreadyStartedError,
     GameError,
@@ -15,17 +26,8 @@ from impostor_bot.game.exceptions import (
     PlayerNotFoundError,
 )
 
-from impostor_bot.application.exceptions import GameNotFoundError
-from impostor_bot.application.join_game import JoinGame
-from impostor_bot.application.leave_game import LeaveGame
+from impostor_bot.errors.infrastructure import InfrastructureError
 
-from impostor_bot.discord.context import get_game_session_key
-from impostor_bot.discord.state import (
-    game_repository,
-    session_lock_manager,
-)
-
-from impostor_bot.game.player import Player
 
 
 join_game_use_case = JoinGame(
@@ -40,6 +42,8 @@ leave_game_use_case = LeaveGame(
 
 
 async def handle_join_button(interaction: discord.Interaction, view: discord.ui.View, use_case: JoinGame) -> None:
+    await interaction.response.defer()
+
     try:
         key = get_game_session_key(interaction)
 
@@ -50,10 +54,12 @@ async def handle_join_button(interaction: discord.Interaction, view: discord.ui.
             ),
         )
 
-        await interaction.response.edit_message(
-            content=build_game_created_message(game),
-            view=view
-        )
+        if interaction.message is not None:
+            await interaction.message.edit(
+                content=build_game_created_message(game),
+                view=view
+            )
+
 
         await interaction.followup.send(
             build_player_joined_message(interaction.user.id, len(game.players)),
@@ -85,12 +91,18 @@ async def handle_join_button(interaction: discord.Interaction, view: discord.ui.
             str(error)
         )
 
+    except InfrastructureError as error:
+        await handle_infrastructure_error(interaction, error)
+
 
 async def handle_leave_button(
     interaction: discord.Interaction,
     view: discord.ui.View,
     use_case: LeaveGame,
 ) -> None:
+    await interaction.response.defer()
+
+    
     try:
         key = get_game_session_key(interaction)
 
@@ -101,10 +113,11 @@ async def handle_leave_button(
             ),
         )
 
-        await interaction.response.edit_message(
-            content=build_game_created_message(game),
-            view=view
-        )
+        if interaction.message is not None:
+            await interaction.message.edit(
+                content=build_game_created_message(game),
+                view=view
+            )
 
         await interaction.followup.send(
             build_player_left_message(interaction.user.id, len(game.players)),
@@ -141,6 +154,9 @@ async def handle_leave_button(
             interaction,
             str(error)
         )
+
+    except InfrastructureError as error:
+        await handle_infrastructure_error(interaction, error)
 
 
 class LobbyView(discord.ui.View):

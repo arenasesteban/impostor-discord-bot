@@ -1,9 +1,15 @@
 from impostor_bot.words.loader import get_random_word
+from impostor_bot.errors.infrastructure import WordProviderError
+from impostor_bot.words.exceptions import WordError
 
 
 class StaticWordProvider:
     async def get_word(self, category: str | None = None) -> str:
-        if category is None:
-            return get_random_word()
+        try:
+            if category is None:
+                return get_random_word()
 
-        return get_random_word(category)
+            return get_random_word(category)
+
+        except WordError as error:
+            raise WordProviderError("Unable to provide a game word.") from error
