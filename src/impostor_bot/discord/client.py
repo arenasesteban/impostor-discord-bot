@@ -22,14 +22,12 @@ class ImpostorBot(discord.Client):
     ) -> None:
         intents = discord.Intents.default()
 
-        super().__init__(
-            intents=intents
-        )
+        super().__init__(intents=intents)
 
         self.tree = app_commands.CommandTree(self)
 
-        self._startup_hooks = startup_hooks
-        self._shutdown_hooks = shutdown_hooks
+        self._startup_hooks = list(startup_hooks)
+        self._shutdown_hooks = list(shutdown_hooks)
 
     async def setup_hook(self) -> None:
         for hook in self._startup_hooks:
@@ -53,12 +51,12 @@ class ImpostorBot(discord.Client):
             f"Logged in as {self.user} "
             f"(ID: {self.user.id})"
         )
+    
+    def add_startup_hook(self, hook: LifecycleHook) -> None:
+        self._startup_hooks.append(hook)
 
 
-def create_bot(
-    startup_hooks: tuple[LifecycleHook, ...] = (),
-    shutdown_hooks: tuple[LifecycleHook, ...] = (),
-) -> ImpostorBot:
+def create_bot(startup_hooks: tuple[LifecycleHook, ...] = (), shutdown_hooks: tuple[LifecycleHook, ...] = ()) -> ImpostorBot:
     return ImpostorBot(
         startup_hooks=startup_hooks,
         shutdown_hooks=shutdown_hooks,
