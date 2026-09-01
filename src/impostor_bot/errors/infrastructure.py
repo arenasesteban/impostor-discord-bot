@@ -1,5 +1,5 @@
 class InfrastructureError(Exception):
-    """Base class for failures caused by external infrastructure."""
+    """Base class for technical dependency failures."""
 
 
 class DatabaseError(InfrastructureError):
@@ -11,7 +11,7 @@ class DatabaseUnavailableError(DatabaseError):
 
 
 class DiscordAPIError(InfrastructureError):
-    """Raised when an unexpected Discord API operation fails."""
+    """Raised when a Discord API operation fails unexpectedly."""
 
 
 class WordProviderError(InfrastructureError):

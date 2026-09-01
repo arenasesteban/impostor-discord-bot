@@ -77,3 +77,32 @@ def test_connection_refused_error_becomes_database_unavailable():
         translated,
         DatabaseUnavailableError,
     )
+
+
+def test_operational_error_is_database_unavailable():
+    error = OperationalError(
+        "SELECT 1",
+        {},
+        Exception(
+            "connection refused"
+        ),
+    )
+
+    translated = translate_database_error(
+        error
+    )
+
+    assert isinstance(
+        translated,
+        DatabaseUnavailableError,
+    )
+
+
+def test_generic_sqlalchemy_error_is_database_error():
+    translated = translate_database_error(
+        SQLAlchemyError(
+            "database failure"
+        )
+    )
+
+    assert type(translated) is DatabaseError

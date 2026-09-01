@@ -1,11 +1,13 @@
 import discord
 
 from impostor_bot.discord.context import get_game_session_key
-from impostor_bot.discord.error_handling import send_infrastructure_error
+from impostor_bot.discord.error_handling import send_known_error
 from impostor_bot.discord.state import (
     game_repository,
     session_lock_manager,
 )
+
+from impostor_bot.discord.error_handling import send_known_error
 from impostor_bot.discord.messages import (
     build_game_created_message,
     build_player_joined_message,
@@ -13,21 +15,14 @@ from impostor_bot.discord.messages import (
     send_error,
 )
 
-from impostor_bot.application.exceptions import GameNotFoundError
 from impostor_bot.application.join_game import JoinGame
 from impostor_bot.application.leave_game import LeaveGame
+from impostor_bot.application.exceptions import ApplicationError
 
 from impostor_bot.game.player import Player
-from impostor_bot.game.exceptions import (
-    GameAlreadyStartedError,
-    GameError,
-    HostCannotLeaveError,
-    PlayerAlreadyJoinedError,
-    PlayerNotFoundError,
-)
+from impostor_bot.game.exceptions import GameRuleError
 
-from impostor_bot.errors.infrastructure import InfrastructureError
-
+from impostor_bot.errors import InfrastructureError
 
 
 join_game_use_case = JoinGame(
@@ -66,33 +61,12 @@ async def handle_join_button(interaction: discord.Interaction, view: discord.ui.
             ephemeral=True
         )
 
-    except GameNotFoundError as error:
-        await send_error(
+    except (ApplicationError, GameRuleError, InfrastructureError) as error:
+        await send_known_error(
             interaction,
-            str(error)
+            error,
+            operation="join",
         )
-
-    except PlayerAlreadyJoinedError:
-        await send_error(
-            interaction,
-            "You have already joined this game. "
-            "Use `/impostor status` to see the player list."
-        )
-
-    except GameAlreadyStartedError:
-        await send_error(
-            interaction,
-            "You cannot join because the game has already started."
-        )
-
-    except GameError as error:
-        await send_error(
-            interaction,
-            str(error)
-        )
-
-    except InfrastructureError as error:
-        await send_infrastructure_error(interaction, error)
 
 
 async def handle_leave_button(
@@ -124,39 +98,12 @@ async def handle_leave_button(
             ephemeral=True
         )
 
-    except GameNotFoundError as error:
-        await send_error(
+    except (ApplicationError, GameRuleError, InfrastructureError) as error:
+        await send_known_error(
             interaction,
-            str(error)
+            error,
+            operation="leave",
         )
-
-    except HostCannotLeaveError:
-        await send_error(
-            interaction,
-            "The host cannot leave the game. "
-            "If you want to close it, use `/impostor cancel`."
-        )
-
-    except PlayerNotFoundError:
-        await send_error(
-            interaction,
-            "You are not currently joined in this game."
-        )
-
-    except GameAlreadyStartedError:
-        await send_error(
-            interaction,
-            "You cannot leave because the game has already started."
-        )
-
-    except GameError as error:
-        await send_error(
-            interaction,
-            str(error)
-        )
-
-    except InfrastructureError as error:
-        await send_infrastructure_error(interaction, error)
 
 
 class LobbyView(discord.ui.View):

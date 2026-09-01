@@ -1,5 +1,5 @@
 class ApplicationError(Exception):
-    """Base class for application-level errors."""
+    """Base class for expected application-level failures."""
 
 
 class GameAlreadyExistsError(ApplicationError):

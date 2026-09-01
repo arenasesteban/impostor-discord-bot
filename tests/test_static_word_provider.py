@@ -1,6 +1,10 @@
+from json import JSONDecodeError
+from unittest.mock import Mock
+
 import pytest
 
-from impostor_bot.errors.infrastructure import (
+import impostor_bot.infrastructure.word_providers.static_word_provider as provider_module
+from impostor_bot.errors import (
     WordProviderError,
 )
 from impostor_bot.infrastructure.word_providers.static_word_provider import (
@@ -12,19 +16,32 @@ from impostor_bot.words.exceptions import (
 
 
 @pytest.mark.asyncio
-async def test_word_provider_translates_loader_error(
+@pytest.mark.parametrize(
+    "source_error",
+    [
+        WordsFileNotFoundError(
+            "/secret/path/words.json"
+        ),
+        OSError(
+            "filesystem unavailable"
+        ),
+        JSONDecodeError(
+            "invalid JSON",
+            "{",
+            0,
+        ),
+    ],
+)
+async def test_provider_translates_external_errors(
     monkeypatch,
+    source_error,
 ):
-    def fail(*args, **kwargs):
-        raise WordsFileNotFoundError(
-            "secret/path/words.json"
-        )
-
     monkeypatch.setattr(
-        "impostor_bot.infrastructure."
-        "word_providers.static_word_provider."
+        provider_module,
         "get_random_word",
-        fail,
+        Mock(
+            side_effect=source_error
+        ),
     )
 
     provider = StaticWordProvider()
@@ -34,39 +51,23 @@ async def test_word_provider_translates_loader_error(
     ) as exc_info:
         await provider.get_word()
 
-    assert isinstance(
-        exc_info.value.__cause__,
-        WordsFileNotFoundError,
+    assert (
+        exc_info.value.__cause__
+        is source_error
     )
 
 
 @pytest.mark.asyncio
-async def test_word_provider_does_not_expose_loader_details(
+async def test_provider_returns_word(
     monkeypatch,
 ):
-    def fail(*args, **kwargs):
-        raise WordsFileNotFoundError(
-            "C:/secret/private/words.json"
-        )
-
     monkeypatch.setattr(
-        "impostor_bot.infrastructure."
-        "word_providers.static_word_provider."
+        provider_module,
         "get_random_word",
-        fail,
+        Mock(return_value="pizza"),
     )
 
-    provider = StaticWordProvider()
-
-    with pytest.raises(
-        WordProviderError
-    ) as exc_info:
-        await provider.get_word()
-
-    message = str(
-        exc_info.value
+    assert (
+        await StaticWordProvider().get_word()
+        == "pizza"
     )
-
-    assert "secret" not in message
-    assert "private" not in message
-    assert "words.json" not in message

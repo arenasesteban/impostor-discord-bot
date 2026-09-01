@@ -10,7 +10,7 @@ from impostor_bot.game.exceptions import (
     GameAlreadyStartedError,
     NotEnoughPlayersError,
     HostCannotLeaveError,
-    GameError,
+    GameInvariantError,
 )
 
 from impostor_bot.constants import (
@@ -219,3 +219,46 @@ def test_can_cancel_started_game():
     game.cancel()
 
     assert game.status == GameState.CANCELLED
+
+
+def test_start_rejects_invalid_impostor():
+    game = Game.create(
+        host_id=1
+    )
+
+    game.add_player(2)
+    game.add_player(3)
+
+    with pytest.raises(
+        GameInvariantError
+    ):
+        game.start_game(
+            secret_word="pizza",
+            impostor_id=999,
+        )
+
+
+def test_generate_roles_requires_word():
+    game = Game.create(
+        host_id=1
+    )
+
+    game.impostor_id = 1
+
+    with pytest.raises(
+        GameInvariantError
+    ):
+        game.generate_roles()
+
+
+def test_generate_roles_requires_impostor():
+    game = Game.create(
+        host_id=1
+    )
+
+    game.secret_word = "pizza"
+
+    with pytest.raises(
+        GameInvariantError
+    ):
+        game.generate_roles()

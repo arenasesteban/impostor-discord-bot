@@ -1,26 +1,35 @@
+
 class GameError(Exception):
-    """Base class for all game-related exceptions."""
+    """Base class for all game-domain errors."""
 
 
-class GameAlreadyStartedError(GameError):
-    """Raised when an operation is attempted on a game that has already started."""
+class GameRuleError(GameError):
+    """Base class for expected violations of game rules."""
 
 
-class PlayerAlreadyJoinedError(GameError):
-    """Raised when a player tries to join a game they are already part of."""
+class GameInvariantError(GameError):
+    """Raised when the internal state of a game is inconsistent."""
 
 
-class HostCannotLeaveError(GameError):
+class InvalidGameStateError(GameRuleError):
+    """Raised when an operation is invalid for the current game state."""
+
+
+class GameAlreadyStartedError(InvalidGameStateError):
+    """Raised when a waiting-only operation is attempted after start."""
+
+
+class PlayerAlreadyJoinedError(GameRuleError):
+    """Raised when a player tries to join a game they already belong to."""
+
+
+class HostCannotLeaveError(GameRuleError):
     """Raised when the host tries to leave the game."""
 
 
-class PlayerNotFoundError(GameError):
-    """Raised when a player is not found in the game session."""
+class PlayerNotFoundError(GameRuleError):
+    """Raised when a player is not part of the game."""
 
 
-class NotEnoughPlayersError(GameError):
+class NotEnoughPlayersError(GameRuleError):
     """Raised when there are not enough players to start the game."""
-
-
-class InvalidGameStateError(GameError):
-    """Raised when an operation is invalid for the current game state."""

@@ -5,7 +5,7 @@ from discord import app_commands
 from impostor_bot.discord.views import LobbyView
 from impostor_bot.discord.context import get_game_session_key
 from impostor_bot.discord.role_delivery import deliver_roles
-from impostor_bot.discord.error_handling import send_infrastructure_error
+from impostor_bot.discord.error_handling import send_known_error
 from impostor_bot.discord.state import (
     active_lobby_messages,
     game_repository,
@@ -34,15 +34,7 @@ from impostor_bot.discord.messages import (
 )
 
 from impostor_bot.game.player import Player
-from impostor_bot.game.exceptions import (
-    GameAlreadyStartedError,
-    GameError,
-    HostCannotLeaveError,
-    PlayerAlreadyJoinedError,
-    PlayerNotFoundError,
-    NotEnoughPlayersError,
-    InvalidGameStateError
-)
+from impostor_bot.game.exceptions import GameRuleError
 
 from impostor_bot.application.create_game import CreateGame
 from impostor_bot.application.start_game import StartGame
@@ -51,18 +43,14 @@ from impostor_bot.application.leave_game import LeaveGame
 from impostor_bot.application.cancel_game import CancelGame
 from impostor_bot.application.finish_game import FinishGame
 from impostor_bot.application.get_game_status import GetGameStatus
-from impostor_bot.application.exceptions import (
-    GameAlreadyExistsError,
-    GameNotFoundError,
-    NotGameHostError
-)
+from impostor_bot.application.exceptions import ApplicationError
 
 from impostor_bot.infrastructure.random.python_random_selector import PythonRandomSelector
 from impostor_bot.infrastructure.word_providers.static_word_provider import StaticWordProvider
 
 from impostor_bot.ports.lobby_message_repository import LobbyMessageRepository
 
-from impostor_bot.errors.infrastructure import InfrastructureError
+from impostor_bot.errors import InfrastructureError
 
 
 word_provider = StaticWordProvider()
@@ -130,18 +118,12 @@ async def handle_create(interaction: discord.Interaction, use_case: CreateGame, 
 
         active_lobby_messages[key] = message.id
 
-    except GameAlreadyExistsError:
-        await send_error(
+    except (ApplicationError, GameRuleError, InfrastructureError) as error:
+        await send_known_error(
             interaction,
-            "There is already an open game in this channel. "
-            "Use `/impostor status` to check it."
+            error,
+            operation="create",
         )
-
-    except GameError as error:
-        await send_error(interaction, str(error))
-
-    except InfrastructureError as error:
-        await send_infrastructure_error(interaction, error)
 
 
 async def handle_join(interaction: discord.Interaction, use_case: JoinGame) -> None:
@@ -172,33 +154,12 @@ async def handle_join(interaction: discord.Interaction, use_case: JoinGame) -> N
             ephemeral=True
         )
 
-    except GameNotFoundError as error:
-        await send_error(
+    except (ApplicationError, GameRuleError, InfrastructureError) as error:
+        await send_known_error(
             interaction,
-            str(error)
+            error,
+            operation="join",
         )
-
-    except PlayerAlreadyJoinedError:
-        await send_error(
-            interaction,
-            "You have already joined this game. "
-            "Use `/impostor status` to see the player list."
-        )
-
-    except GameAlreadyStartedError:
-        await send_error(
-            interaction,
-            "You cannot join because the game has already started."
-        )
-
-    except GameError as error:
-        await send_error(
-            interaction,
-            str(error)
-        )
-
-    except InfrastructureError as error:
-        await send_infrastructure_error(interaction, error)
 
 
 async def handle_leave(interaction: discord.Interaction, use_case: LeaveGame) -> None:
@@ -229,39 +190,12 @@ async def handle_leave(interaction: discord.Interaction, use_case: LeaveGame) ->
             ephemeral=True
         )
 
-    except GameNotFoundError as error:
-        await send_error(
+    except (ApplicationError, GameRuleError, InfrastructureError) as error:
+        await send_known_error(
             interaction,
-            str(error)
+            error,
+            operation="leave",
         )
-
-    except HostCannotLeaveError:
-        await send_error(
-            interaction,
-            "The host cannot leave the game. "
-            "If you want to close it, use `/impostor cancel`."
-        )
-
-    except PlayerNotFoundError:
-        await send_error(
-            interaction,
-            "You are not currently joined in this game."
-        )
-
-    except GameAlreadyStartedError:
-        await send_error(
-            interaction,
-            "You cannot leave because the game has already started."
-        )
-
-    except GameError as error:
-        await send_error(
-            interaction,
-            str(error)
-        )
-
-    except InfrastructureError as error:
-        await send_infrastructure_error(interaction, error)
 
 
 async def handle_start(interaction: discord.Interaction, use_case: StartGame, cancel_use_case: CancelGame) -> None:
@@ -319,39 +253,12 @@ async def handle_start(interaction: discord.Interaction, use_case: StartGame, ca
             ephemeral=False
         )
 
-    except GameNotFoundError as error:
-        await send_error(
+    except (ApplicationError, GameRuleError, InfrastructureError) as error:
+        await send_known_error(
             interaction,
-            str(error)
+            error,
+            operation="start",
         )
-
-    except NotGameHostError:
-        await send_error(
-            interaction,
-            "Only the host can start the game."
-        )
-
-    except NotEnoughPlayersError:
-        await send_error(
-            interaction,
-            "The game needs at least 3 players to start. "
-            "Use `/impostor status` to check the player list."
-        )
-
-    except GameAlreadyStartedError:
-        await send_error(
-            interaction,
-            "This game has already started or is no longer available."
-        )
-
-    except GameError as error:
-        await send_error(
-            interaction,
-            str(error)
-        )
-
-    except InfrastructureError as error:
-        await send_infrastructure_error(interaction, error)
 
 
 async def handle_finish(interaction: discord.Interaction, use_case: FinishGame) -> None:
@@ -383,32 +290,12 @@ async def handle_finish(interaction: discord.Interaction, use_case: FinishGame) 
             ephemeral=False
         )
 
-    except GameNotFoundError as error:
-        await send_error(
+    except (ApplicationError, GameRuleError, InfrastructureError) as error:
+        await send_known_error(
             interaction,
-            str(error)
+            error,
+            operation="finish",
         )
-
-    except NotGameHostError:
-        await send_error(
-            interaction,
-            "Only the host can finish the game."
-        )
-
-    except InvalidGameStateError:
-        await send_error(
-            interaction,
-            "Only a started game can be finished."
-        )
-
-    except GameError as error:
-        await send_error(
-            interaction,
-            str(error)
-        )
-
-    except InfrastructureError as error:
-        await send_infrastructure_error(interaction, error)
 
 
 async def handle_cancel(interaction: discord.Interaction, use_case: CancelGame) -> None:
@@ -440,32 +327,12 @@ async def handle_cancel(interaction: discord.Interaction, use_case: CancelGame) 
             ephemeral=False
         )
 
-    except GameNotFoundError as error:
-        await send_error(
+    except (ApplicationError, GameRuleError, InfrastructureError) as error:
+        await send_known_error(
             interaction,
-            str(error)
+            error,
+            operation="cancel",
         )
-
-    except NotGameHostError:
-        await send_error(
-            interaction,
-            "Only the host can cancel the game."
-        )
-
-    except InvalidGameStateError:
-        await send_error(
-            interaction,
-            "This game can no longer be cancelled."
-        )
-
-    except GameError as error:
-        await send_error(
-            interaction,
-            str(error)
-        )
-
-    except InfrastructureError as error:
-        await send_infrastructure_error(interaction, error)
 
 
 async def handle_status(interaction: discord.Interaction, use_case: GetGameStatus) -> None:
@@ -486,21 +353,12 @@ async def handle_status(interaction: discord.Interaction, use_case: GetGameStatu
             ephemeral=True
         )
 
-    except GameNotFoundError:
-        await send_error(
+    except (ApplicationError, GameRuleError, InfrastructureError) as error:
+        await send_known_error(
             interaction,
-            "There is no active game in this channel. "
-            "Use `/impostor create` to create one."
+            error,
+            operation="status",
         )
-
-    except GameError as error:
-        await send_error(
-            interaction,
-            str(error)
-        )
-
-    except InfrastructureError as error:
-        await send_infrastructure_error(interaction, error)
 
 
 impostor_group = app_commands.Group(

@@ -15,4 +15,6 @@ class StaticWordProvider:
             return get_random_word(category)
 
         except (WordError, OSError, JSONDecodeError) as error:
-            raise WordProviderError("Unable to provide a game word.") from error
+            raise WordProviderError(
+                "Unable to provide a game word."
+            ) from error
