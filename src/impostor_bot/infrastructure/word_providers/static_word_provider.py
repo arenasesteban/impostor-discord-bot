@@ -1,6 +1,9 @@
+from json import JSONDecodeError
+
 from impostor_bot.words.loader import get_random_word
-from impostor_bot.errors.infrastructure import WordProviderError
 from impostor_bot.words.exceptions import WordError
+
+from impostor_bot.errors.infrastructure import WordProviderError
 
 
 class StaticWordProvider:
@@ -11,5 +14,5 @@ class StaticWordProvider:
 
             return get_random_word(category)
 
-        except WordError as error:
+        except (WordError, OSError, JSONDecodeError) as error:
             raise WordProviderError("Unable to provide a game word.") from error

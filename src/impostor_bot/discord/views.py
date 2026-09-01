@@ -1,7 +1,7 @@
 import discord
 
 from impostor_bot.discord.context import get_game_session_key
-from impostor_bot.discord.error_handling import handle_infrastructure_error
+from impostor_bot.discord.error_handling import send_infrastructure_error
 from impostor_bot.discord.state import (
     game_repository,
     session_lock_manager,
@@ -92,7 +92,7 @@ async def handle_join_button(interaction: discord.Interaction, view: discord.ui.
         )
 
     except InfrastructureError as error:
-        await handle_infrastructure_error(interaction, error)
+        await send_infrastructure_error(interaction, error)
 
 
 async def handle_leave_button(
@@ -156,7 +156,7 @@ async def handle_leave_button(
         )
 
     except InfrastructureError as error:
-        await handle_infrastructure_error(interaction, error)
+        await send_infrastructure_error(interaction, error)
 
 
 class LobbyView(discord.ui.View):

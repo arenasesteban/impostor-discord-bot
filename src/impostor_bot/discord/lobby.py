@@ -31,7 +31,6 @@ async def fetch_lobby_message(client: discord.Client, key: GameSessionKey) -> di
         return None
 
 
-
 async def update_lobby_message(client: discord.Client, key: GameSessionKey, content: str, view: discord.ui.View) -> None:
     message = await fetch_lobby_message(client, key)
 
@@ -42,7 +41,6 @@ async def update_lobby_message(client: discord.Client, key: GameSessionKey, cont
         content=content,
         view=view,
     )
-
 
 
 async def refresh_lobby_message(client: discord.Client, key: GameSessionKey, game: Game, view: discord.ui.View) -> None:

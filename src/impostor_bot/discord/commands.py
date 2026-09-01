@@ -5,7 +5,7 @@ from discord import app_commands
 from impostor_bot.discord.views import LobbyView
 from impostor_bot.discord.context import get_game_session_key
 from impostor_bot.discord.role_delivery import deliver_roles
-from impostor_bot.discord.error_handling import handle_infrastructure_error
+from impostor_bot.discord.error_handling import send_infrastructure_error
 from impostor_bot.discord.state import (
     active_lobby_messages,
     game_repository,
@@ -141,7 +141,7 @@ async def handle_create(interaction: discord.Interaction, use_case: CreateGame, 
         await send_error(interaction, str(error))
 
     except InfrastructureError as error:
-        await handle_infrastructure_error(interaction, error)
+        await send_infrastructure_error(interaction, error)
 
 
 async def handle_join(interaction: discord.Interaction, use_case: JoinGame) -> None:
@@ -198,7 +198,7 @@ async def handle_join(interaction: discord.Interaction, use_case: JoinGame) -> N
         )
 
     except InfrastructureError as error:
-        await handle_infrastructure_error(interaction, error)
+        await send_infrastructure_error(interaction, error)
 
 
 async def handle_leave(interaction: discord.Interaction, use_case: LeaveGame) -> None:
@@ -261,7 +261,7 @@ async def handle_leave(interaction: discord.Interaction, use_case: LeaveGame) ->
         )
 
     except InfrastructureError as error:
-        await handle_infrastructure_error(interaction, error)
+        await send_infrastructure_error(interaction, error)
 
 
 async def handle_start(interaction: discord.Interaction, use_case: StartGame, cancel_use_case: CancelGame) -> None:
@@ -351,7 +351,7 @@ async def handle_start(interaction: discord.Interaction, use_case: StartGame, ca
         )
 
     except InfrastructureError as error:
-        await handle_infrastructure_error(interaction, error)
+        await send_infrastructure_error(interaction, error)
 
 
 async def handle_finish(interaction: discord.Interaction, use_case: FinishGame) -> None:
@@ -408,7 +408,7 @@ async def handle_finish(interaction: discord.Interaction, use_case: FinishGame) 
         )
 
     except InfrastructureError as error:
-        await handle_infrastructure_error(interaction, error)
+        await send_infrastructure_error(interaction, error)
 
 
 async def handle_cancel(interaction: discord.Interaction, use_case: CancelGame) -> None:
@@ -465,7 +465,7 @@ async def handle_cancel(interaction: discord.Interaction, use_case: CancelGame) 
         )
 
     except InfrastructureError as error:
-        await handle_infrastructure_error(interaction, error)
+        await send_infrastructure_error(interaction, error)
 
 
 async def handle_status(interaction: discord.Interaction, use_case: GetGameStatus) -> None:
@@ -500,7 +500,7 @@ async def handle_status(interaction: discord.Interaction, use_case: GetGameStatu
         )
 
     except InfrastructureError as error:
-        await handle_infrastructure_error(interaction, error)
+        await send_infrastructure_error(interaction, error)
 
 
 impostor_group = app_commands.Group(
