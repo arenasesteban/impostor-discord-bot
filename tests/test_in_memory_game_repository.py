@@ -160,3 +160,45 @@ def test_repository_delete_does_not_affect_other_session():
     assert asyncio.run(
         repository.get(key_b)
     ) is game_b
+
+
+def test_list_active_returns_all_sessions():
+    repository = InMemoryGameRepository()
+
+    key_a = GameSessionKey(
+        guild_id=100,
+        channel_id=200,
+    )
+
+    key_b = GameSessionKey(
+        guild_id=101,
+        channel_id=200,
+    )
+
+    game_a = Game.create(host_id=1)
+    game_b = Game.create(host_id=2)
+
+    asyncio.run(
+        repository.save(
+            key=key_a,
+            game=game_a,
+        )
+    )
+
+    asyncio.run(
+        repository.save(
+            key=key_b,
+            game=game_b,
+        )
+    )
+
+    sessions = asyncio.run(
+        repository.list_active()
+    )
+
+    assert len(sessions) == 2
+
+    assert (key_a, game_a) in sessions
+    assert (key_b, game_b) in sessions
+
+

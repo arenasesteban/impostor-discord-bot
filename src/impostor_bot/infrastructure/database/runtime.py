@@ -10,12 +10,16 @@ from impostor_bot.infrastructure.database.session import (
 from impostor_bot.infrastructure.repositories.postgres_game_repository import (
     PostgresGameRepository,
 )
+from impostor_bot.infrastructure.repositories.postgres_lobby_message_repository import (
+    PostgresLobbyMessageRepository,
+)
 
 
 @dataclass(slots=True)
 class PostgresRuntime:
     engine: AsyncEngine
-    repository: PostgresGameRepository
+    game_repository: PostgresGameRepository
+    lobby_message_repository: PostgresLobbyMessageRepository
 
     async def check_connection(self) -> None:
         async with self.engine.connect() as connection:
@@ -30,9 +34,8 @@ def create_postgres_runtime(database_url: str) -> PostgresRuntime:
 
     session_factory = create_session_factory(engine)
 
-    repository = PostgresGameRepository(session_factory)
-
     return PostgresRuntime(
         engine=engine,
-        repository=repository,
+        game_repository=PostgresGameRepository(session_factory),
+        lobby_message_repository=PostgresLobbyMessageRepository(session_factory)
     )

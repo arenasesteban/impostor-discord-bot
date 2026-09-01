@@ -4,6 +4,7 @@ from impostor_bot.discord.client import (
 )
 from impostor_bot.discord.state import (
     configure_game_repository,
+    configure_lobby_message_repository,
 )
 from impostor_bot.infrastructure.database.runtime import (
     create_postgres_runtime,
@@ -16,7 +17,8 @@ from impostor_bot.infrastructure.database.settings import (
 def main() -> None:
     postgres_runtime = create_postgres_runtime(get_database_url())
 
-    configure_game_repository(postgres_runtime.repository)
+    configure_game_repository(postgres_runtime.game_repository)
+    configure_lobby_message_repository(postgres_runtime.lobby_message_repository)
 
     bot = create_bot(
         startup_hooks=(postgres_runtime.check_connection,),
