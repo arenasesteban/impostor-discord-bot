@@ -1,6 +1,7 @@
 import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
+import logging
 
 import pytest
 
@@ -173,3 +174,87 @@ def test_create_handler_persists_lobby_message_metadata():
     )
 
     assert active_lobby_messages[key] == 999
+
+def test_create_handler_logs_game_created(
+    caplog,
+):
+    game = Game.create(
+        host_id=300
+    )
+
+    use_case = SimpleNamespace(
+        execute=AsyncMock(
+            return_value=game,
+        )
+    )
+
+    lobby_repository = SimpleNamespace(
+        save=AsyncMock(),
+    )
+
+    message = SimpleNamespace(
+        id=999,
+    )
+
+    response_done = False
+
+    async def defer(
+        *args,
+        **kwargs,
+    ):
+        nonlocal response_done
+        response_done = True
+
+    interaction = SimpleNamespace(
+        id=500,
+        guild_id=100,
+        channel_id=200,
+        channel=SimpleNamespace(
+            id=200,
+        ),
+        user=SimpleNamespace(
+            id=300,
+        ),
+        response=SimpleNamespace(
+            defer=AsyncMock(
+                side_effect=defer,
+            ),
+            is_done=lambda: response_done,
+            send_message=AsyncMock(),
+        ),
+        followup=SimpleNamespace(
+            send=AsyncMock(),
+        ),
+        edit_original_response=AsyncMock(
+            return_value=message,
+        ),
+    )
+
+    caplog.set_level(logging.INFO)
+
+    asyncio.run(
+        handle_create(
+            interaction=interaction,
+            use_case=use_case,
+            lobby_repository=lobby_repository,
+        )
+    )
+
+    record = next(
+        record
+        for record in caplog.records
+        if getattr(
+            record,
+            "event",
+            None,
+        )
+        == "game_created"
+    )
+
+    assert record.context[
+        "guild_id"
+    ] == 100
+
+    assert record.context[
+        "channel_id"
+    ] == 200

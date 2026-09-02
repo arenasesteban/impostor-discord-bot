@@ -1,20 +1,18 @@
+import discord
+import logging
+
 from typing import Literal, TypeAlias
 
-import discord
+from impostor_bot.discord.messages import send_error
+from impostor_bot.discord.logging_context import interaction_log_context
 
 from impostor_bot.application.exceptions import (
     ApplicationError,
     GameAlreadyExistsError,
     GameNotFoundError,
-    NotGameHostError,
+    NotGameHostError
 )
-from impostor_bot.discord.messages import send_error
-from impostor_bot.errors import (
-    DatabaseError,
-    DiscordAPIError,
-    InfrastructureError,
-    WordProviderError,
-)
+
 from impostor_bot.game.exceptions import (
     GameAlreadyStartedError,
     GameRuleError,
@@ -23,7 +21,17 @@ from impostor_bot.game.exceptions import (
     NotEnoughPlayersError,
     PlayerAlreadyJoinedError,
     PlayerNotFoundError,
+    GameInvariantError
 )
+
+from impostor_bot.errors import (
+    DatabaseError,
+    DiscordAPIError,
+    InfrastructureError,
+    WordProviderError
+)
+
+from impostor_bot.observability.logging import log_error
 
 
 ErrorOperation: TypeAlias = Literal[
@@ -33,7 +41,7 @@ ErrorOperation: TypeAlias = Literal[
     "start",
     "finish",
     "cancel",
-    "status",
+    "status"
 ]
 
 KnownUserError: TypeAlias = (
@@ -41,6 +49,42 @@ KnownUserError: TypeAlias = (
     | GameRuleError
     | InfrastructureError
 )
+
+
+logger = logging.getLogger(__name__)
+
+
+async def handle_known_error(interaction: discord.Interaction, error: Exception) -> None:
+    context = interaction_log_context(interaction)
+
+    if isinstance(error, DatabaseError):
+        log_error(
+            logger,
+            "database_error",
+            error,
+            **context
+        )
+
+    elif isinstance(error, DiscordAPIError):
+        log_error(
+            logger,
+            "discord_api_error",
+            error,
+            **context
+        )
+
+    elif isinstance(error, WordProviderError):
+        log_error(
+            logger,
+            "word_provider_error",
+            error,
+            **context
+        )
+
+    await send_error(
+        interaction,
+        get_user_error_message(error)
+    )
 
 
 def get_user_error_message(error: KnownUserError, *, operation: ErrorOperation) -> str:
@@ -52,12 +96,12 @@ def get_user_error_message(error: KnownUserError, *, operation: ErrorOperation) 
     if isinstance(error, ApplicationError):
         return _get_application_error_message(
             error,
-            operation=operation,
+            operation=operation
         )
 
     return _get_game_rule_error_message(
         error,
-        operation=operation,
+        operation=operation
     )
 
 
@@ -66,7 +110,34 @@ async def send_known_error(interaction: discord.Interaction, error: KnownUserErr
         interaction,
         get_user_error_message(
             error,
-            operation=operation,
+            operation=operation
+        ),
+    )
+
+
+async def handle_known_error(interaction: discord.Interaction, error: KnownUserError, *, operation: ErrorOperation) -> None:
+    _log_known_error(interaction, error)
+
+    message = get_user_error_message(error, operation=operation)
+
+    await send_error(interaction, message)
+
+
+async def handle_unexpected_error(interaction: discord.Interaction, error: BaseException) -> None:
+    log_error(
+        logger,
+        "unexpected_error",
+        error,
+        **interaction_log_context(
+            interaction
+        ),
+    )
+
+    await send_error(
+        interaction,
+        (
+            "An unexpected problem occurred. "
+            "Please try again."
         ),
     )
 
@@ -127,7 +198,7 @@ def _get_application_error_message(error: ApplicationError, *, operation: ErrorO
         action = {
             "start": "start",
             "finish": "finish",
-            "cancel": "cancel",
+            "cancel": "cancel"
         }.get(operation)
 
         if action is not None:
@@ -211,3 +282,42 @@ def _get_game_rule_error_message(error: GameRuleError, *, operation: ErrorOperat
     return (
         "The game could not complete this operation."
     )
+
+
+def _log_known_error(interaction, error: Exception) -> None:
+    context = interaction_log_context(interaction)
+
+    if isinstance(error, DatabaseError):
+        log_error(
+            logger,
+            "database_error",
+            error,
+            **context,
+        )
+        return
+
+    if isinstance(error, DiscordAPIError):
+        log_error(
+            logger,
+            "discord_api_error",
+            error,
+            **context,
+        )
+        return
+
+    if isinstance(error, WordProviderError):
+        log_error(
+            logger,
+            "word_provider_error",
+            error,
+            **context,
+        )
+        return
+
+    if isinstance(error, GameInvariantError):
+        log_error(
+            logger,
+            "game_invariant_error",
+            error,
+            **context,
+        )

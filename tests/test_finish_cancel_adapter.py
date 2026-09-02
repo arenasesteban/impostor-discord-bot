@@ -1,6 +1,7 @@
 import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
+import logging
 
 from impostor_bot.application.exceptions import (
     GameNotFoundError,
@@ -420,3 +421,104 @@ def test_cancel_handler_reports_missing_game():
     interaction.response.send_message.assert_not_awaited()
 
 
+def test_finish_handler_logs_game_finished(
+    caplog,
+):
+    game = create_finished_game()
+
+    use_case = SimpleNamespace(
+        execute=AsyncMock(
+            return_value=game,
+        )
+    )
+
+    interaction = create_interaction()
+
+    caplog.set_level(logging.INFO)
+
+    with patch(
+        "impostor_bot.discord.commands.close_lobby_message",
+        new=AsyncMock(),
+    ):
+        asyncio.run(
+            handle_finish(
+                interaction=interaction,
+                use_case=use_case,
+            )
+        )
+
+    record = next(
+        record
+        for record in caplog.records
+        if getattr(
+            record,
+            "event",
+            None,
+        )
+        == "game_finished"
+    )
+
+    assert record.context[
+        "guild_id"
+    ] == 100
+
+    assert record.context[
+        "channel_id"
+    ] == 200
+
+
+def test_cancel_handler_logs_game_cancelled(
+    caplog,
+):
+    game = (
+        create_cancelled_waiting_game()
+    )
+
+    use_case = SimpleNamespace(
+        execute=AsyncMock(
+            return_value=game,
+        )
+    )
+
+    interaction = create_interaction()
+
+    caplog.set_level(logging.INFO)
+
+    with (
+        patch(
+            "impostor_bot.discord.commands.close_lobby_message",
+            new=AsyncMock(),
+        ),
+        patch(
+            "impostor_bot.discord.commands.LobbyView",
+        ),
+    ):
+        asyncio.run(
+            handle_cancel(
+                interaction=interaction,
+                use_case=use_case,
+            )
+        )
+
+    record = next(
+        record
+        for record in caplog.records
+        if getattr(
+            record,
+            "event",
+            None,
+        )
+        == "game_cancelled"
+    )
+
+    assert record.context[
+        "guild_id"
+    ] == 100
+
+    assert record.context[
+        "channel_id"
+    ] == 200
+
+    assert record.context[
+        "reason"
+    ] == "host_requested"

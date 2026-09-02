@@ -1,4 +1,5 @@
 import discord
+import logging
 
 from discord import app_commands
 
@@ -10,7 +11,7 @@ from impostor_bot.discord.state import (
     active_lobby_messages,
     game_repository,
     lobby_message_repository,
-    session_lock_manager,
+    session_lock_manager
 )
 from impostor_bot.discord.lobby import (
     close_lobby_message,
@@ -29,8 +30,7 @@ from impostor_bot.discord.messages import (
     build_lobby_cancelled_message,
     build_lobby_finished_message,
     build_dm_error_message,
-    build_help_message,
-    send_error
+    build_help_message
 )
 
 from impostor_bot.game.player import Player
@@ -52,40 +52,45 @@ from impostor_bot.ports.lobby_message_repository import LobbyMessageRepository
 
 from impostor_bot.errors import InfrastructureError
 
+from impostor_bot.observability.logging import log_event
+
+
+logger = logging.getLogger(__name__)
+
 
 word_provider = StaticWordProvider()
 random_selector = PythonRandomSelector()
 
 create_game_use_case = CreateGame(
     repository=game_repository,
-    lock_manager=session_lock_manager,
+    lock_manager=session_lock_manager
 )
 
 join_game_use_case = JoinGame(
     repository=game_repository,
-    lock_manager=session_lock_manager,
+    lock_manager=session_lock_manager
 )
 
 leave_game_use_case = LeaveGame(
     repository=game_repository,
-    lock_manager=session_lock_manager,
+    lock_manager=session_lock_manager
 )
 
 start_game_use_case = StartGame(
     repository=game_repository,
     word_provider=word_provider,
     random_selector=random_selector,
-    lock_manager=session_lock_manager,
+    lock_manager=session_lock_manager
 )
 
 finish_game_use_case = FinishGame(
     repository=game_repository,
-    lock_manager=session_lock_manager,
+    lock_manager=session_lock_manager
 )
 
 cancel_game_use_case = CancelGame(
     repository=game_repository,
-    lock_manager=session_lock_manager,
+    lock_manager=session_lock_manager
 )
 
 get_game_status_use_case = GetGameStatus(
@@ -95,7 +100,7 @@ get_game_status_use_case = GetGameStatus(
 
 async def handle_create(interaction: discord.Interaction, use_case: CreateGame, lobby_repository: LobbyMessageRepository) -> None:
     await interaction.response.defer(
-        thinking=True,
+        thinking=True
     )
 
     try:
@@ -104,6 +109,13 @@ async def handle_create(interaction: discord.Interaction, use_case: CreateGame, 
         game = await use_case.execute(
             key=key,
             host_id=interaction.user.id
+        )
+
+        log_event(
+            logger,
+            "game_created",
+            guild_id=key.guild_id,
+            channel_id=key.channel_id
         )
         
         message = await interaction.edit_original_response(
@@ -142,6 +154,14 @@ async def handle_join(interaction: discord.Interaction, use_case: JoinGame) -> N
             )
         )
 
+        log_event(
+            logger,
+            "player_joined",
+            guild_id=key.guild_id,
+            channel_id=key.channel_id,
+            player_count=len(game.players)
+        )
+
         await refresh_lobby_message(
             client=interaction.client,
             key=key,
@@ -178,6 +198,14 @@ async def handle_leave(interaction: discord.Interaction, use_case: LeaveGame) ->
             )
         )
 
+        log_event(
+            logger,
+            "player_left",
+            guild_id=key.guild_id,
+            channel_id=key.channel_id,
+            player_count=len(game.players)
+        )
+
         await refresh_lobby_message(
             client=interaction.client,
             key=key,
@@ -201,7 +229,7 @@ async def handle_leave(interaction: discord.Interaction, use_case: LeaveGame) ->
 async def handle_start(interaction: discord.Interaction, use_case: StartGame, cancel_use_case: CancelGame) -> None:
     await interaction.response.defer(
         ephemeral=True,
-        thinking=True,
+        thinking=True
     )
 
     try:
@@ -210,6 +238,14 @@ async def handle_start(interaction: discord.Interaction, use_case: StartGame, ca
         result = await use_case.execute(
             key=key,
             requester_id=interaction.user.id
+        )
+
+        log_event(
+            logger,
+            "game_started",
+            guild_id=key.guild_id,
+            channel_id=key.channel_id,
+            player_count=len(result.game.players)
         )
 
         failed_players = await deliver_roles(
@@ -225,6 +261,14 @@ async def handle_start(interaction: discord.Interaction, use_case: StartGame, ca
             cancelled_game = await cancel_use_case.execute(
                 key=key,
                 requester_id=interaction.user.id
+            )
+
+            log_event(
+                logger,
+                "game_cancelled",
+                guild_id=key.guild_id,
+                channel_id=key.channel_id,
+                reason="role_delivery_failed",
             )
 
             await close_lobby_message(
@@ -274,6 +318,13 @@ async def handle_finish(interaction: discord.Interaction, use_case: FinishGame) 
             requester_id=interaction.user.id
         )
 
+        log_event(
+            logger,
+            "game_finished",
+            guild_id=key.guild_id,
+            channel_id=key.channel_id
+        )
+
         disabled_view = LobbyView(
             disabled=True
         )
@@ -309,6 +360,14 @@ async def handle_cancel(interaction: discord.Interaction, use_case: CancelGame) 
         game = await use_case.execute(
             key=key,
             requester_id=interaction.user.id
+        )
+
+        log_event(
+            logger,
+            "game_cancelled",
+            guild_id=key.guild_id,
+            channel_id=key.channel_id,
+            reason="host_requested"
         )
 
         disabled_view = LobbyView(

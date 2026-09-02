@@ -1,19 +1,19 @@
-from collections.abc import (
-    MutableMapping,
-)
-from dataclasses import dataclass
-from typing import Protocol
+import logging
 
-from impostor_bot.game.session_key import (
-    GameSessionKey,
-)
+from typing import Protocol
+from dataclasses import dataclass
+from collections.abc import MutableMapping
+
 from impostor_bot.game.state import GameState
-from impostor_bot.ports.game_repository import (
-    GameRepository,
-)
-from impostor_bot.ports.lobby_message_repository import (
-    LobbyMessageRepository,
-)
+from impostor_bot.game.session_key import GameSessionKey
+
+from impostor_bot.ports.game_repository import GameRepository
+from impostor_bot.ports.lobby_message_repository import LobbyMessageRepository
+
+from impostor_bot.observability import log_event
+
+
+logger = logging.getLogger(__name__)
 
 
 class SessionRecoveryGateway(Protocol):
@@ -95,13 +95,25 @@ class RecoverGameSessions:
 
             stale_removed += 1
 
-        return RecoverySummary(
+        summary = RecoverySummary(
             discovered=len(sessions),
             restored_waiting=restored_waiting,
             restored_started=restored_started,
             stale_removed=stale_removed,
             detached_lobbies=detached_lobbies
         )
+
+        log_event(
+            logger,
+            "session_recovery_completed",
+            discovered=summary.discovered,
+            restored_waiting=summary.restored_waiting,
+            restored_started=summary.restored_started,
+            stale_removed=summary.stale_removed,
+            detached_lobbies=summary.detached_lobbies
+        )
+
+        return summary
 
     async def _recover_waiting(self, key: GameSessionKey) -> bool:
         message_id = await self._lobby_repository.get(key)

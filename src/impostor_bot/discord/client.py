@@ -1,14 +1,12 @@
+import discord
+
 from collections.abc import (
     Awaitable,
     Callable,
 )
 
-import discord
-from discord import app_commands
-
-from impostor_bot.discord.commands import (
-    impostor_group,
-)
+from impostor_bot.discord.commands import impostor_group
+from impostor_bot.discord.command_tree import ImpostorCommandTree
 
 
 LifecycleHook = Callable[[], Awaitable[None]]
@@ -18,13 +16,13 @@ class ImpostorBot(discord.Client):
     def __init__(
         self,
         startup_hooks: tuple[LifecycleHook, ...] = (),
-        shutdown_hooks: tuple[LifecycleHook, ...] = (),
+        shutdown_hooks: tuple[LifecycleHook, ...] = ()
     ) -> None:
         intents = discord.Intents.default()
 
         super().__init__(intents=intents)
 
-        self.tree = app_commands.CommandTree(self)
+        self.tree = ImpostorCommandTree(self)
 
         self._startup_hooks = list(startup_hooks)
         self._shutdown_hooks = list(shutdown_hooks)
@@ -71,5 +69,5 @@ class ImpostorBot(discord.Client):
 def create_bot(startup_hooks: tuple[LifecycleHook, ...] = (), shutdown_hooks: tuple[LifecycleHook, ...] = ()) -> ImpostorBot:
     return ImpostorBot(
         startup_hooks=startup_hooks,
-        shutdown_hooks=shutdown_hooks,
+        shutdown_hooks=shutdown_hooks
     )

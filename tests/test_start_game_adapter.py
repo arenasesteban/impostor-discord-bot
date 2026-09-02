@@ -1,6 +1,7 @@
 import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
+import logging
 
 from impostor_bot.application.exceptions import NotGameHostError
 from impostor_bot.application.start_game import StartGameResult
@@ -257,3 +258,67 @@ def test_start_handler_reports_non_host_with_followup():
     interaction.response.send_message.assert_not_awaited()
 
     cancel_use_case.execute.assert_not_awaited()
+
+
+def test_start_handler_logs_game_started(
+    caplog,
+):
+    result = create_start_result()
+    game = result.game
+
+    use_case = SimpleNamespace(
+        execute=AsyncMock(
+            return_value=result,
+        )
+    )
+
+    cancel_use_case = SimpleNamespace(
+        execute=AsyncMock(),
+    )
+
+    interaction = create_interaction()
+
+    caplog.set_level(logging.INFO)
+
+    with (
+        patch(
+            "impostor_bot.discord.commands.deliver_roles",
+            new=AsyncMock(
+                return_value=[],
+            ),
+        ),
+        patch(
+            "impostor_bot.discord.commands.close_lobby_message",
+            new=AsyncMock(),
+        ),
+    ):
+        asyncio.run(
+            handle_start(
+                interaction=interaction,
+                use_case=use_case,
+                cancel_use_case=cancel_use_case,
+            )
+        )
+
+    record = next(
+        record
+        for record in caplog.records
+        if getattr(
+            record,
+            "event",
+            None,
+        )
+        == "game_started"
+    )
+
+    assert record.context[
+        "guild_id"
+    ] == interaction.guild_id
+
+    assert record.context[
+        "channel_id"
+    ] == interaction.channel.id
+
+    assert record.context[
+        "player_count"
+    ] == len(game.players)
