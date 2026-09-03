@@ -2,7 +2,7 @@ import discord
 import logging
 
 from impostor_bot.discord.context import get_game_session_key
-from impostor_bot.discord.error_handling import send_known_error, handle_unexpected_error
+from impostor_bot.discord.error_handling import handle_known_error, handle_unexpected_error
 from impostor_bot.discord.state import (
     game_repository,
     session_lock_manager,
@@ -23,6 +23,7 @@ from impostor_bot.game.exceptions import GameRuleError
 from impostor_bot.errors import InfrastructureError
 
 from impostor_bot.observability.logging import log_event
+
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +117,7 @@ async def handle_join_button(interaction: discord.Interaction, view: discord.ui.
         )
 
     except (ApplicationError, GameRuleError, InfrastructureError) as error:
-        await send_known_error(
+        await handle_known_error(
             interaction,
             error,
             operation="join",
@@ -158,7 +159,7 @@ async def handle_leave_button(interaction: discord.Interaction, view: discord.ui
         )
 
     except (ApplicationError, GameRuleError, InfrastructureError) as error:
-        await send_known_error(
+        await handle_known_error(
             interaction,
             error,
             operation="leave"

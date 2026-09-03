@@ -60,27 +60,24 @@ def create_cancelled_started_game() -> Game:
 
 def create_interaction(
     user_id: int = 1,
+    guild_id: int = 100,
+    channel_id: int = 200,
+    interaction_id: int = 1000,
 ):
-    response_done = False
-
-    async def defer(*args, **kwargs):
-        nonlocal response_done
-        response_done = True
-
     return SimpleNamespace(
-        guild_id=100,
+        id=interaction_id,
+        guild_id=guild_id,
+        channel_id=channel_id,
         channel=SimpleNamespace(
-            id=200,
+            id=channel_id,
         ),
         user=SimpleNamespace(
             id=user_id,
         ),
         client=SimpleNamespace(),
         response=SimpleNamespace(
-            defer=AsyncMock(
-                side_effect=defer,
-            ),
-            is_done=lambda: response_done,
+            defer=AsyncMock(),
+            is_done=lambda: True,
             send_message=AsyncMock(),
         ),
         followup=SimpleNamespace(

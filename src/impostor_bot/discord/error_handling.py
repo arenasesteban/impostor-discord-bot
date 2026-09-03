@@ -54,39 +54,6 @@ KnownUserError: TypeAlias = (
 logger = logging.getLogger(__name__)
 
 
-async def handle_known_error(interaction: discord.Interaction, error: Exception) -> None:
-    context = interaction_log_context(interaction)
-
-    if isinstance(error, DatabaseError):
-        log_error(
-            logger,
-            "database_error",
-            error,
-            **context
-        )
-
-    elif isinstance(error, DiscordAPIError):
-        log_error(
-            logger,
-            "discord_api_error",
-            error,
-            **context
-        )
-
-    elif isinstance(error, WordProviderError):
-        log_error(
-            logger,
-            "word_provider_error",
-            error,
-            **context
-        )
-
-    await send_error(
-        interaction,
-        get_user_error_message(error)
-    )
-
-
 def get_user_error_message(error: KnownUserError, *, operation: ErrorOperation) -> str:
     if isinstance(error, InfrastructureError):
         return _get_infrastructure_error_message(
@@ -103,17 +70,6 @@ def get_user_error_message(error: KnownUserError, *, operation: ErrorOperation) 
         error,
         operation=operation
     )
-
-
-async def send_known_error(interaction: discord.Interaction, error: KnownUserError, *, operation: ErrorOperation) -> None:
-    await send_error(
-        interaction,
-        get_user_error_message(
-            error,
-            operation=operation
-        ),
-    )
-
 
 async def handle_known_error(interaction: discord.Interaction, error: KnownUserError, *, operation: ErrorOperation) -> None:
     _log_known_error(interaction, error)

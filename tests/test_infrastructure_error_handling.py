@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from impostor_bot.discord.error_handling import (
-    send_known_error,
+    handle_known_error,
 )
 from impostor_bot.errors.infrastructure import (
     DatabaseUnavailableError,
@@ -23,6 +23,9 @@ from impostor_bot.errors import (
 
 def make_interaction():
     return SimpleNamespace(
+        id=1000,
+        guild_id=100,
+        channel_id=200,
         response=SimpleNamespace(
             is_done=lambda: False,
             send_message=AsyncMock(),
@@ -34,6 +37,9 @@ def make_interaction():
 
 def make_responded_interaction():
     return SimpleNamespace(
+        id=1000,
+        guild_id=100,
+        channel_id=200,
         response=SimpleNamespace(
             is_done=lambda: True,
             send_message=AsyncMock(),
@@ -70,7 +76,7 @@ async def test_infrastructure_error_does_not_expose_internal_message():
         "@production-db.example.com/impostor"
     )
 
-    await send_known_error(
+    await handle_known_error(
         interaction,
         error,
         operation="status",
@@ -94,7 +100,7 @@ async def test_infrastructure_error_does_not_expose_internal_message():
 async def test_infrastructure_error_returns_safe_service_message():
     interaction = make_interaction()
 
-    await send_known_error(
+    await handle_known_error(
         interaction,
         DatabaseUnavailableError(
             "sensitive internal message"
@@ -121,7 +127,7 @@ async def test_infrastructure_error_uses_followup_when_interaction_is_done():
         make_responded_interaction()
     )
 
-    await send_known_error(
+    await handle_known_error(
         interaction,
         DatabaseUnavailableError(
             "internal"

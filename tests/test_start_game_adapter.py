@@ -51,11 +51,18 @@ def create_start_result() -> StartGameResult:
     )
 
 
-def create_interaction(user_id: int = 1):
+def create_interaction(
+    user_id: int = 1,
+    guild_id: int = 100,
+    channel_id: int = 200,
+    interaction_id: int = 1000,
+):
     return SimpleNamespace(
-        guild_id=100,
+        id=interaction_id,
+        guild_id=guild_id,
+        channel_id=channel_id,
         channel=SimpleNamespace(
-            id=200,
+            id=channel_id,
         ),
         user=SimpleNamespace(
             id=user_id,
@@ -70,7 +77,6 @@ def create_interaction(user_id: int = 1):
             send=AsyncMock(),
         ),
     )
-
 
 def test_start_handler_keeps_started_game_active():
     result = create_start_result()

@@ -6,7 +6,7 @@ from discord import app_commands
 from impostor_bot.discord.views import LobbyView
 from impostor_bot.discord.context import get_game_session_key
 from impostor_bot.discord.role_delivery import deliver_roles
-from impostor_bot.discord.error_handling import send_known_error
+from impostor_bot.discord.error_handling import handle_known_error, handle_unexpected_error
 from impostor_bot.discord.state import (
     active_lobby_messages,
     game_repository,
@@ -131,7 +131,7 @@ async def handle_create(interaction: discord.Interaction, use_case: CreateGame, 
         active_lobby_messages[key] = message.id
 
     except (ApplicationError, GameRuleError, InfrastructureError) as error:
-        await send_known_error(
+        await handle_known_error(
             interaction,
             error,
             operation="create",
@@ -175,7 +175,7 @@ async def handle_join(interaction: discord.Interaction, use_case: JoinGame) -> N
         )
 
     except (ApplicationError, GameRuleError, InfrastructureError) as error:
-        await send_known_error(
+        await handle_known_error(
             interaction,
             error,
             operation="join",
@@ -219,7 +219,7 @@ async def handle_leave(interaction: discord.Interaction, use_case: LeaveGame) ->
         )
 
     except (ApplicationError, GameRuleError, InfrastructureError) as error:
-        await send_known_error(
+        await handle_known_error(
             interaction,
             error,
             operation="leave",
@@ -269,6 +269,7 @@ async def handle_start(interaction: discord.Interaction, use_case: StartGame, ca
                 guild_id=key.guild_id,
                 channel_id=key.channel_id,
                 reason="role_delivery_failed",
+                failed_player_count=len(failed_players)
             )
 
             await close_lobby_message(
@@ -298,7 +299,7 @@ async def handle_start(interaction: discord.Interaction, use_case: StartGame, ca
         )
 
     except (ApplicationError, GameRuleError, InfrastructureError) as error:
-        await send_known_error(
+        await handle_known_error(
             interaction,
             error,
             operation="start",
@@ -342,7 +343,7 @@ async def handle_finish(interaction: discord.Interaction, use_case: FinishGame) 
         )
 
     except (ApplicationError, GameRuleError, InfrastructureError) as error:
-        await send_known_error(
+        await handle_known_error(
             interaction,
             error,
             operation="finish",
@@ -387,7 +388,7 @@ async def handle_cancel(interaction: discord.Interaction, use_case: CancelGame) 
         )
 
     except (ApplicationError, GameRuleError, InfrastructureError) as error:
-        await send_known_error(
+        await handle_known_error(
             interaction,
             error,
             operation="cancel",
@@ -413,7 +414,7 @@ async def handle_status(interaction: discord.Interaction, use_case: GetGameStatu
         )
 
     except (ApplicationError, GameRuleError, InfrastructureError) as error:
-        await send_known_error(
+        await handle_known_error(
             interaction,
             error,
             operation="status",
