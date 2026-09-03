@@ -1,7 +1,10 @@
 import discord
 
 from impostor_bot.discord.views import LobbyView
+
 from impostor_bot.game.session_key import GameSessionKey
+
+from impostor_bot.errors.infrastructure import DiscordAPIError
 
 
 class DiscordPySessionRecoveryGateway:
@@ -23,8 +26,13 @@ class DiscordPySessionRecoveryGateway:
         try:
             await channel.fetch_message(message_id)
 
-        except (discord.NotFound, discord.Forbidden):
+        except discord.NotFound:
             return False
+
+        except (discord.Forbidden, discord.HTTPException) as error:
+            raise DiscordAPIError(
+                "Discord lobby channel could not be accessed."
+            ) from error
 
         return True
 
@@ -46,8 +54,13 @@ class DiscordPySessionRecoveryGateway:
             try:
                 channel = await self._client.fetch_channel(key.channel_id)
 
-            except (discord.NotFound, discord.Forbidden):
+            except discord.NotFound:
                 return None
+
+            except (discord.Forbidden, discord.HTTPException) as error:
+                raise DiscordAPIError(
+                    "Discord lobby channel could not be accessed."
+                ) from error
 
         guild = getattr(channel, "guild", None)
 

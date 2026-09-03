@@ -1,5 +1,6 @@
 import pytest
-
+import asyncio
+import logging
 from impostor_bot.discord.recovery import RecoverGameSessions
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
@@ -968,3 +969,51 @@ async def test_recovery_rebuilds_cache_from_persisted_state():
     }
 
     assert obsolete_key not in cache
+
+
+def test_recovery_logs_summary(
+    caplog,
+):
+    game_repository = (
+        InMemoryGameRepository()
+    )
+
+    lobby_repository = (
+        FakeLobbyMessageRepository()
+    )
+
+    gateway = FakeRecoveryGateway()
+
+    cache = {}
+
+    recovery = RecoverGameSessions(
+        game_repository,
+        lobby_repository,
+        gateway,
+        cache,
+    )
+
+    caplog.set_level(logging.INFO)
+
+    asyncio.run(
+        recovery.execute()
+    )
+
+    record = next(
+        record
+        for record in caplog.records
+        if getattr(
+            record,
+            "event",
+            None,
+        )
+        == "session_recovery_completed"
+    )
+
+    assert record.context == {
+        "discovered": 0,
+        "restored_waiting": 0,
+        "restored_started": 0,
+        "stale_removed": 0,
+        "detached_lobbies": 0,
+    }

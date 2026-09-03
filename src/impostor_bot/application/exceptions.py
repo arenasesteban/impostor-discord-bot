@@ -1,13 +1,5 @@
 class ApplicationError(Exception):
-    """Base class for application-level errors."""
-
-
-class GameAlreadyExistsError(ApplicationError):
-    """Raised when a game already exists for the requested session."""
-
-
-class ApplicationError(Exception):
-    """Base class for application-level errors."""
+    """Base class for expected application-level failures."""
 
 
 class GameAlreadyExistsError(ApplicationError):

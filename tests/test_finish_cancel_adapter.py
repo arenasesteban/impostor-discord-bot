@@ -1,6 +1,7 @@
 import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
+import logging
 
 from impostor_bot.application.exceptions import (
     GameNotFoundError,
@@ -14,6 +15,9 @@ from impostor_bot.game.exceptions import InvalidGameStateError
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.game.state import GameState
+from impostor_bot.discord.messages import (
+    build_game_cancelled_message,
+)
 
 
 def create_waiting_game() -> Game:
@@ -54,25 +58,32 @@ def create_cancelled_started_game() -> Game:
     return game
 
 
-def create_interaction(user_id: int = 1):
+def create_interaction(
+    user_id: int = 1,
+    guild_id: int = 100,
+    channel_id: int = 200,
+    interaction_id: int = 1000,
+):
     return SimpleNamespace(
-        guild_id=100,
+        id=interaction_id,
+        guild_id=guild_id,
+        channel_id=channel_id,
         channel=SimpleNamespace(
-            id=200,
+            id=channel_id,
         ),
         user=SimpleNamespace(
             id=user_id,
         ),
         client=SimpleNamespace(),
         response=SimpleNamespace(
-            is_done=lambda: False,
+            defer=AsyncMock(),
+            is_done=lambda: True,
             send_message=AsyncMock(),
         ),
         followup=SimpleNamespace(
             send=AsyncMock(),
         ),
     )
-
 
 def test_finish_handler_maps_interaction_and_closes_lobby():
     game = create_finished_game()
@@ -113,8 +124,11 @@ def test_finish_handler_maps_interaction_and_closes_lobby():
 
     close_lobby_mock.assert_awaited_once()
 
-    interaction.response.send_message.assert_awaited_once()
-    interaction.followup.send.assert_not_awaited()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+    interaction.followup.send.assert_awaited_once()
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_finish_handler_rejects_non_host():
@@ -151,7 +165,13 @@ def test_finish_handler_rejects_non_host():
 
     close_lobby_mock.assert_not_awaited()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once()
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_finish_handler_rejects_invalid_state():
@@ -178,7 +198,13 @@ def test_finish_handler_rejects_invalid_state():
 
     close_lobby_mock.assert_not_awaited()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once()
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_finish_handler_reports_missing_game():
@@ -205,7 +231,13 @@ def test_finish_handler_reports_missing_game():
 
     close_lobby_mock.assert_not_awaited()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once()
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_cancel_handler_cancels_waiting_game():
@@ -247,7 +279,16 @@ def test_cancel_handler_cancels_waiting_game():
 
     close_lobby_mock.assert_awaited_once()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once_with(
+        build_game_cancelled_message(),
+        ephemeral=False,
+    )
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_cancel_handler_cancels_started_game():
@@ -289,7 +330,16 @@ def test_cancel_handler_cancels_started_game():
 
     close_lobby_mock.assert_awaited_once()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once_with(
+        build_game_cancelled_message(),
+        ephemeral=False,
+    )
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_cancel_handler_rejects_non_host():
@@ -326,7 +376,13 @@ def test_cancel_handler_rejects_non_host():
 
     close_lobby_mock.assert_not_awaited()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once()
+
+    interaction.response.send_message.assert_not_awaited()
 
 
 def test_cancel_handler_reports_missing_game():
@@ -353,6 +409,113 @@ def test_cancel_handler_reports_missing_game():
 
     close_lobby_mock.assert_not_awaited()
 
-    interaction.response.send_message.assert_awaited_once()
+    interaction.response.defer.assert_awaited_once_with(
+        thinking=True,
+    )
+
+    interaction.followup.send.assert_awaited_once()
+
+    interaction.response.send_message.assert_not_awaited()
 
 
+def test_finish_handler_logs_game_finished(
+    caplog,
+):
+    game = create_finished_game()
+
+    use_case = SimpleNamespace(
+        execute=AsyncMock(
+            return_value=game,
+        )
+    )
+
+    interaction = create_interaction()
+
+    caplog.set_level(logging.INFO)
+
+    with patch(
+        "impostor_bot.discord.commands.close_lobby_message",
+        new=AsyncMock(),
+    ):
+        asyncio.run(
+            handle_finish(
+                interaction=interaction,
+                use_case=use_case,
+            )
+        )
+
+    record = next(
+        record
+        for record in caplog.records
+        if getattr(
+            record,
+            "event",
+            None,
+        )
+        == "game_finished"
+    )
+
+    assert record.context[
+        "guild_id"
+    ] == 100
+
+    assert record.context[
+        "channel_id"
+    ] == 200
+
+
+def test_cancel_handler_logs_game_cancelled(
+    caplog,
+):
+    game = (
+        create_cancelled_waiting_game()
+    )
+
+    use_case = SimpleNamespace(
+        execute=AsyncMock(
+            return_value=game,
+        )
+    )
+
+    interaction = create_interaction()
+
+    caplog.set_level(logging.INFO)
+
+    with (
+        patch(
+            "impostor_bot.discord.commands.close_lobby_message",
+            new=AsyncMock(),
+        ),
+        patch(
+            "impostor_bot.discord.commands.LobbyView",
+        ),
+    ):
+        asyncio.run(
+            handle_cancel(
+                interaction=interaction,
+                use_case=use_case,
+            )
+        )
+
+    record = next(
+        record
+        for record in caplog.records
+        if getattr(
+            record,
+            "event",
+            None,
+        )
+        == "game_cancelled"
+    )
+
+    assert record.context[
+        "guild_id"
+    ] == 100
+
+    assert record.context[
+        "channel_id"
+    ] == 200
+
+    assert record.context[
+        "reason"
+    ] == "host_requested"

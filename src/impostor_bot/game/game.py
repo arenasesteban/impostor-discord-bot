@@ -6,13 +6,13 @@ from impostor_bot.constants import (
 )
 
 from impostor_bot.game.exceptions import (
-    GameError,
     GameAlreadyStartedError,
-    PlayerAlreadyJoinedError,
+    GameInvariantError,
     HostCannotLeaveError,
-    PlayerNotFoundError,
-    NotEnoughPlayersError,
     InvalidGameStateError,
+    NotEnoughPlayersError,
+    PlayerAlreadyJoinedError,
+    PlayerNotFoundError,
 )
 
 from impostor_bot.game.state import GameState
@@ -86,7 +86,7 @@ class Game:
         self.validate_start()
 
         if impostor_id not in self.players:
-            raise GameError(
+            raise GameInvariantError(
                 "The selected impostor must belong to the game."
             )
 
@@ -98,12 +98,12 @@ class Game:
 
     def generate_roles(self) -> dict[int, str]:
         if self.secret_word is None:
-            raise GameError(
+            raise GameInvariantError(
                 "Cannot generate roles without a secret word."
             )
         
         if self.impostor_id is None:
-            raise GameError(
+            raise GameInvariantError(
                 "Cannot generate roles without an impostor."
             )
         
