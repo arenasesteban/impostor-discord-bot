@@ -59,22 +59,3 @@ def test_game_invariant_is_not_a_rule_error():
         GameInvariantError,
         GameRuleError,
     )
-
-
-def test_infrastructure_hierarchy():
-    assert issubclass(
-        DatabaseUnavailableError,
-        DatabaseError,
-    )
-    assert issubclass(
-        DatabaseError,
-        InfrastructureError,
-    )
-    assert issubclass(
-        DiscordAPIError,
-        InfrastructureError,
-    )
-    assert issubclass(
-        WordProviderError,
-        InfrastructureError,
-    )

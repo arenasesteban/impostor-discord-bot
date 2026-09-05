@@ -18,36 +18,15 @@ from impostor_bot.game.exceptions import (
 )
 
 from impostor_bot.game.game import Game
-from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.game.state import GameState
 
-from impostor_bot.infrastructure.concurrency.asyncio_session_lock_manager import (
-    AsyncioSessionLockManager,
+from tests.helpers.fakes import FakeGameRepository
+
+from tests.helpers.factories import (
+    make_session_key,
+    make_ready_game,
+    make_started_game,
 )
-
-
-def create_lock_manager() -> AsyncioSessionLockManager:
-    return AsyncioSessionLockManager()
-
-
-class FakeGameRepository:
-    def __init__(self, game: Game | None = None):
-        self.game = game
-        self.saved_game: Game | None = None
-
-    async def get(
-        self,
-        key: GameSessionKey,
-    ) -> Game | None:
-        return self.game
-
-    async def save(
-        self,
-        key: GameSessionKey,
-        game: Game,
-    ) -> None:
-        self.game = game
-        self.saved_game = game
 
 
 class FakeWordProvider:
@@ -76,23 +55,11 @@ class DeterministicRandomSelector:
         return self.selected_id
 
 
-def create_key() -> GameSessionKey:
-    return GameSessionKey(
-        guild_id=100,
-        channel_id=200,
-    )
+key = make_session_key()
 
 
-def create_ready_game() -> Game:
-    game = Game.create(host_id=1)
-    game.add_player(2)
-    game.add_player(3)
-
-    return game
-
-
-def test_start_game_assigns_deterministic_impostor():
-    game = create_ready_game()
+def test_start_game_assigns_deterministic_impostor(lock_manager):
+    game = make_ready_game()
 
     repository = FakeGameRepository(game)
     word_provider = FakeWordProvider("pizza")
@@ -102,12 +69,12 @@ def test_start_game_assigns_deterministic_impostor():
         repository=repository,
         word_provider=word_provider,
         random_selector=selector,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     result = asyncio.run(
         start_game.execute(
-            key=create_key(),
+            key=key,
             requester_id=1,
         )
     )
@@ -125,19 +92,19 @@ def test_start_game_assigns_deterministic_impostor():
     assert repository.saved_game is game
 
 
-def test_start_game_assigns_exactly_one_impostor():
-    game = create_ready_game()
+def test_start_game_assigns_exactly_one_impostor(lock_manager):
+    game = make_ready_game()
 
     start_game = StartGame(
         repository=FakeGameRepository(game),
         word_provider=FakeWordProvider("pizza"),
         random_selector=DeterministicRandomSelector(3),
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     result = asyncio.run(
         start_game.execute(
-            key=create_key(),
+            key=key,
             requester_id=1,
         )
     )
@@ -151,26 +118,25 @@ def test_start_game_assigns_exactly_one_impostor():
     assert len(impostors) == 1
 
 
-def test_start_game_rejects_missing_game():
+def test_start_game_rejects_missing_game(lock_manager):
     start_game = StartGame(
         repository=FakeGameRepository(),
         word_provider=FakeWordProvider(),
         random_selector=DeterministicRandomSelector(2),
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     with pytest.raises(GameNotFoundError):
         asyncio.run(
             start_game.execute(
-                key=create_key(),
+                key=key,
                 requester_id=1,
             )
         )
 
 
-def test_start_game_rejects_non_host():
-    game = create_ready_game()
-
+def test_start_game_rejects_non_host(lock_manager):
+    game = make_ready_game()
     word_provider = FakeWordProvider()
     selector = DeterministicRandomSelector(2)
 
@@ -178,13 +144,13 @@ def test_start_game_rejects_non_host():
         repository=FakeGameRepository(game),
         word_provider=word_provider,
         random_selector=selector,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     with pytest.raises(NotGameHostError):
         asyncio.run(
             start_game.execute(
-                key=create_key(),
+                key=key,
                 requester_id=2,
             )
         )
@@ -194,7 +160,7 @@ def test_start_game_rejects_non_host():
     assert game.status == GameState.WAITING
 
 
-def test_start_game_rejects_insufficient_players_before_providers():
+def test_start_game_rejects_insufficient_players_before_providers(lock_manager):
     game = Game.create(host_id=1)
 
     word_provider = FakeWordProvider()
@@ -204,13 +170,13 @@ def test_start_game_rejects_insufficient_players_before_providers():
         repository=FakeGameRepository(game),
         word_provider=word_provider,
         random_selector=selector,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     with pytest.raises(NotEnoughPlayersError):
         asyncio.run(
             start_game.execute(
-                key=create_key(),
+                key=key,
                 requester_id=1,
             )
         )
@@ -220,25 +186,20 @@ def test_start_game_rejects_insufficient_players_before_providers():
     assert game.status == GameState.WAITING
 
 
-def test_start_game_rejects_started_game():
-    game = create_ready_game()
-
-    game.start_game(
-        secret_word="pizza",
-        impostor_id=2,
-    )
+def test_start_game_rejects_started_game(lock_manager):
+    game = make_started_game()
 
     start_game = StartGame(
         repository=FakeGameRepository(game),
         word_provider=FakeWordProvider(),
         random_selector=DeterministicRandomSelector(3),
-        lock_manager=create_lock_manager()
+        lock_manager=lock_manager
     )
 
     with pytest.raises(GameAlreadyStartedError):
         asyncio.run(
             start_game.execute(
-                key=create_key(),
+                key=key,
                 requester_id=1,
             )
         )
@@ -259,10 +220,8 @@ def test_game_start_uses_explicit_impostor():
 
 
 def test_game_rejects_impostor_outside_players():
-    game = Game.create(host_id=1)
-    game.add_player(2)
-    game.add_player(3)
-
+    game = make_ready_game()
+    
     with pytest.raises(GameError):
         game.start_game(
             secret_word="pizza",

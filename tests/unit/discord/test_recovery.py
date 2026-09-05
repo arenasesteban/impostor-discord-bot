@@ -9,6 +9,12 @@ from impostor_bot.infrastructure.repositories.in_memory_game_repository import (
 )
 from impostor_bot.game.state import GameState
 
+from tests.helpers.factories import (
+    make_session_key,
+    make_ready_game,
+    make_started_game,
+)
+
 
 class FakeRecoveryGateway:
     def __init__(
@@ -81,36 +87,10 @@ class FakeLobbyMessageRepository:
         )
 
 
-def create_key(
-    guild_id: int = 100,
-    channel_id: int = 200,
-) -> GameSessionKey:
-    return GameSessionKey(
-        guild_id=guild_id,
-        channel_id=channel_id,
-    )
-
-
-def create_started_game() -> Game:
-    game = Game.create(
-        host_id=1
-    )
-
-    game.add_player(2)
-    game.add_player(3)
-
-    game.start_game(
-        secret_word="pizza",
-        impostor_id=2,
-    )
-
-    return game
-
+key = make_session_key()
 
 @pytest.mark.asyncio
 async def test_recovery_restores_waiting_session():
-    key = create_key()
-
     game_repository = (
         InMemoryGameRepository()
     )
@@ -184,8 +164,6 @@ async def test_recovery_restores_waiting_session():
 
 @pytest.mark.asyncio
 async def test_recovery_removes_waiting_session_without_lobby_metadata():
-    key = create_key()
-
     game_repository = (
         InMemoryGameRepository()
     )
@@ -247,8 +225,6 @@ async def test_recovery_removes_waiting_session_without_lobby_metadata():
 
 @pytest.mark.asyncio
 async def test_recovery_removes_waiting_session_when_lobby_message_is_missing():
-    key = create_key()
-
     game_repository = (
         InMemoryGameRepository()
     )
@@ -322,10 +298,8 @@ async def test_recovery_removes_waiting_session_when_lobby_message_is_missing():
 async def test_recovery_removes_session_when_channel_no_longer_exists(
     started: bool,
 ):
-    key = create_key()
-
     if started:
-        game = create_started_game()
+        game = make_started_game()
     else:
         game = Game.create(
             host_id=1
@@ -390,15 +364,13 @@ async def test_recovery_removes_session_when_channel_no_longer_exists(
 
 @pytest.mark.asyncio
 async def test_recovery_restores_started_session():
-    key = create_key()
-
     game_repository = (
         InMemoryGameRepository()
     )
 
     await game_repository.save(
         key=key,
-        game=create_started_game(),
+        game=make_started_game(),
     )
 
     lobby_repository = (
@@ -457,15 +429,13 @@ async def test_recovery_restores_started_session():
 
 @pytest.mark.asyncio
 async def test_started_session_survives_missing_lobby_message():
-    key = create_key()
-
     game_repository = (
         InMemoryGameRepository()
     )
 
     await game_repository.save(
         key=key,
-        game=create_started_game(),
+        game=make_started_game(),
     )
 
     lobby_repository = (
@@ -524,8 +494,6 @@ async def test_started_session_survives_missing_lobby_message():
 
 @pytest.mark.asyncio
 async def test_recovery_removes_unexpected_terminal_game():
-    key = create_key()
-
     game = Game.create(
         host_id=1
     )
@@ -596,17 +564,17 @@ async def test_recovery_removes_unexpected_terminal_game():
 
 @pytest.mark.asyncio
 async def test_recovery_handles_multiple_sessions_independently():
-    waiting_key = create_key(
+    waiting_key = make_session_key(
         guild_id=100,
         channel_id=200,
     )
 
-    stale_key = create_key(
+    stale_key = make_session_key(
         guild_id=100,
         channel_id=201,
     )
 
-    started_key = create_key(
+    started_key = make_session_key(
         guild_id=101,
         channel_id=200,
     )
@@ -631,7 +599,7 @@ async def test_recovery_handles_multiple_sessions_independently():
 
     await game_repository.save(
         key=started_key,
-        game=create_started_game(),
+        game=make_started_game(),
     )
 
     lobby_repository = (
@@ -665,7 +633,7 @@ async def test_recovery_handles_multiple_sessions_independently():
         },
     )
 
-    old_key = create_key(
+    old_key = make_session_key(
         guild_id=999,
         channel_id=999,
     )
@@ -730,7 +698,7 @@ async def test_recovery_handles_multiple_sessions_independently():
 
 @pytest.mark.asyncio
 async def test_waiting_recovery_is_idempotent():
-    key = GameSessionKey(
+    key = make_session_key(
         guild_id=100,
         channel_id=200,
     )

@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from impostor_bot.infrastructure.database.models import (
     GamePlayerRecord,
+    GameRecord,
 )
 
 
@@ -116,7 +117,7 @@ async def test_started_game_round_trip(
 
 
 @pytest.mark.asyncio
-async def test_save_replaces_persisted_player_state(
+async def test_save_synchronizes_existing_game_players(
     postgres_session_factory,
 ):
     repository = PostgresGameRepository(
@@ -138,6 +139,7 @@ async def test_save_replaces_persisted_player_state(
     )
 
     game.remove_player(2)
+    game.add_player(4)
 
     await repository.save(
         key=key,
@@ -152,7 +154,9 @@ async def test_save_replaces_persisted_player_state(
     assert stored_game.players == [
         1,
         3,
+        4,
     ]
+
 
 @pytest.mark.asyncio
 async def test_postgres_repository_isolates_sessions(
@@ -168,12 +172,18 @@ async def test_postgres_repository_isolates_sessions(
     )
 
     key_b = GameSessionKey(
+        guild_id=100,
+        channel_id=201,
+    )
+
+    key_c = GameSessionKey(
         guild_id=101,
         channel_id=200,
     )
 
     game_a = Game.create(host_id=1)
     game_b = Game.create(host_id=2)
+    game_c = Game.create(host_id=3)
 
     await repository.save(
         key=key_a,
@@ -185,6 +195,19 @@ async def test_postgres_repository_isolates_sessions(
         game=game_b,
     )
 
+    await repository.save(
+        key=key_c,
+        game=game_c,
+    )
+
+    # Mutate only session A.
+    game_a.add_player(10)
+
+    await repository.save(
+        key=key_a,
+        game=game_a,
+    )
+
     stored_a = await repository.get(
         key_a
     )
@@ -193,11 +216,21 @@ async def test_postgres_repository_isolates_sessions(
         key_b
     )
 
+    stored_c = await repository.get(
+        key_c
+    )
+
     assert stored_a is not None
     assert stored_b is not None
+    assert stored_c is not None
 
-    assert stored_a.host_id == 1
-    assert stored_b.host_id == 2
+    assert stored_a.players == [
+        1,
+        10,
+    ]
+
+    assert stored_b.players == [2]
+    assert stored_c.players == [3]
 
 
 @pytest.mark.asyncio
@@ -358,3 +391,98 @@ async def test_list_active_returns_empty_list_when_no_games_exist(
     sessions = await repository.list_active()
 
     assert sessions == []
+
+
+@pytest.mark.asyncio
+async def test_database_rejects_duplicate_game_session_key(
+    postgres_session_factory,
+):
+    repository = PostgresGameRepository(
+        postgres_session_factory
+    )
+
+    key = GameSessionKey(
+        guild_id=100,
+        channel_id=200,
+    )
+
+    await repository.save(
+        key=key,
+        game=Game.create(host_id=1),
+    )
+
+    with pytest.raises(IntegrityError):
+        async with (
+            postgres_session_factory()
+            as session
+        ):
+            async with session.begin():
+                session.add(
+                    GameRecord(
+                        guild_id=100,
+                        channel_id=200,
+                        host_id=999,
+                        state=(
+                            GameState.WAITING.value
+                        ),
+                        secret_word=None,
+                        impostor_id=None,
+                    )
+                )
+
+
+@pytest.mark.asyncio
+async def test_database_rejects_orphan_player(
+    postgres_session_factory,
+):
+    with pytest.raises(IntegrityError):
+        async with (
+            postgres_session_factory()
+            as session
+        ):
+            async with session.begin():
+                session.add(
+                    GamePlayerRecord(
+                        guild_id=999,
+                        channel_id=999,
+                        player_id=1,
+                        position=0,
+                    )
+                )
+
+
+@pytest.mark.asyncio
+async def test_database_rejects_duplicate_player_position(
+    postgres_session_factory,
+):
+    repository = PostgresGameRepository(
+        postgres_session_factory
+    )
+
+    key = GameSessionKey(
+        guild_id=100,
+        channel_id=200,
+    )
+
+    game = Game.create(host_id=1)
+    game.add_player(2)
+
+    await repository.save(
+        key=key,
+        game=game,
+    )
+
+    with pytest.raises(IntegrityError):
+        async with (
+            postgres_session_factory()
+            as session
+        ):
+            async with session.begin():
+                session.add(
+                    GamePlayerRecord(
+                        guild_id=100,
+                        channel_id=200,
+                        player_id=3,
+                        position=1,
+                    )
+                )

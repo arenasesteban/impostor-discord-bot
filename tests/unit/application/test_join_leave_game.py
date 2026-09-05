@@ -15,66 +15,25 @@ from impostor_bot.game.exceptions import (
 
 from impostor_bot.game.game import Game
 from impostor_bot.game.player import Player
-from impostor_bot.game.session_key import GameSessionKey
 
-from impostor_bot.infrastructure.concurrency.asyncio_session_lock_manager import (
-    AsyncioSessionLockManager,
+from tests.helpers.fakes import FakeGameRepository
+from tests.helpers.factories import (
+    make_session_key,
+    make_ready_game,
+    make_started_game,
 )
 
-def create_lock_manager() -> AsyncioSessionLockManager:
-    return AsyncioSessionLockManager()
+
+key = make_session_key()
 
 
-class FakeGameRepository:
-    def __init__(self, game: Game | None = None) -> None:
-        self.game = game
-        self.saved_game: Game | None = None
-        self.saved_key: GameSessionKey | None = None
-
-    async def get(
-        self,
-        key: GameSessionKey,
-    ) -> Game | None:
-        return self.game
-
-    async def save(
-        self,
-        key: GameSessionKey,
-        game: Game,
-    ) -> None:
-        self.game = game
-        self.saved_game = game
-        self.saved_key = key
-
-
-def create_key() -> GameSessionKey:
-    return GameSessionKey(
-        guild_id=100,
-        channel_id=200,
-    )
-
-
-def create_started_game() -> Game:
-    game = Game.create(host_id=1)
-    game.add_player(2)
-    game.add_player(3)
-    game.start_game(
-        secret_word="pizza",
-        impostor_id=2,
-    )
-
-    return game
-
-
-def test_join_game_adds_player_and_saves_game():
+def test_join_game_adds_player_and_saves_game(lock_manager):
     game = Game.create(host_id=1)
     repository = FakeGameRepository(game)
     join_game = JoinGame(
         repository=repository,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
-
-    key = create_key()
 
     result = asyncio.run(
         join_game.execute(
@@ -89,71 +48,69 @@ def test_join_game_adds_player_and_saves_game():
     assert repository.saved_key == key
 
 
-def test_join_game_rejects_missing_game():
+def test_join_game_rejects_missing_game(lock_manager):
     repository = FakeGameRepository()
     join_game = JoinGame(
         repository=repository,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     with pytest.raises(GameNotFoundError):
         asyncio.run(
             join_game.execute(
-                key=create_key(),
+                key=key,
                 player=Player(id=2),
             )
         )
 
 
-def test_join_game_rejects_duplicate_player():
+def test_join_game_rejects_duplicate_player(lock_manager):
     game = Game.create(host_id=1)
     game.add_player(2)
 
     repository = FakeGameRepository(game)
     join_game = JoinGame(
         repository=repository,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     with pytest.raises(PlayerAlreadyJoinedError):
         asyncio.run(
             join_game.execute(
-                key=create_key(),
+                key=key,
                 player=Player(id=2),
             )
         )
 
 
-def test_join_game_rejects_started_game():
-    repository = FakeGameRepository(
-        create_started_game()
-    )
+def test_join_game_rejects_started_game(lock_manager):
+    game = make_started_game()
+
+    repository = FakeGameRepository(game)
 
     join_game = JoinGame(
         repository=repository,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     with pytest.raises(GameAlreadyStartedError):
         asyncio.run(
             join_game.execute(
-                key=create_key(),
+                key=key,
                 player=Player(id=4),
             )
         )
 
 
-def test_leave_game_removes_player_and_saves_game():
+def test_leave_game_removes_player_and_saves_game(lock_manager):
     game = Game.create(host_id=1)
     game.add_player(2)
 
     repository = FakeGameRepository(game)
     leave_game = LeaveGame(
         repository=repository,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
-
-    key = create_key()
 
     result = asyncio.run(
         leave_game.execute(
@@ -168,72 +125,72 @@ def test_leave_game_removes_player_and_saves_game():
     assert repository.saved_key == key
 
 
-def test_leave_game_rejects_missing_game():
+def test_leave_game_rejects_missing_game(lock_manager):
     repository = FakeGameRepository()
     leave_game = LeaveGame(
         repository=repository,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     with pytest.raises(GameNotFoundError):
         asyncio.run(
             leave_game.execute(
-                key=create_key(),
+                key=key,
                 player=Player(id=2),
             )
         )
 
 
-def test_leave_game_rejects_non_member():
+def test_leave_game_rejects_non_member(lock_manager):
     game = Game.create(host_id=1)
 
     repository = FakeGameRepository(game)
     leave_game = LeaveGame(
         repository=repository,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     with pytest.raises(PlayerNotFoundError):
         asyncio.run(
             leave_game.execute(
-                key=create_key(),
+                key=key,
                 player=Player(id=2),
             )
         )
 
 
-def test_leave_game_rejects_host():
+def test_leave_game_rejects_host(lock_manager):
     game = Game.create(host_id=1)
 
     repository = FakeGameRepository(game)
     leave_game = LeaveGame(
         repository=repository,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     with pytest.raises(HostCannotLeaveError):
         asyncio.run(
             leave_game.execute(
-                key=create_key(),
+                key=key,
                 player=Player(id=1),
             )
         )
 
 
-def test_leave_game_rejects_started_game():
-    repository = FakeGameRepository(
-        create_started_game()
-    )
+def test_leave_game_rejects_started_game(lock_manager):
+    game = make_started_game()
+    
+    repository = FakeGameRepository(game)
 
     leave_game = LeaveGame(
         repository=repository,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     with pytest.raises(GameAlreadyStartedError):
         asyncio.run(
             leave_game.execute(
-                key=create_key(),
+                key=key,
                 player=Player(id=2),
             )
         )

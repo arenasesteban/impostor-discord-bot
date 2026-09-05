@@ -17,8 +17,9 @@ from impostor_bot.game.game import Game
 from impostor_bot.game.player import Player
 from impostor_bot.game.session_key import GameSessionKey
 
-from impostor_bot.infrastructure.concurrency.asyncio_session_lock_manager import (
-    AsyncioSessionLockManager,
+from tests.helpers.factories import (
+    make_session_key,
+    make_started_game,
 )
 
 
@@ -99,41 +100,16 @@ class CopyingYieldingRepository:
         )
 
 
-def create_key() -> GameSessionKey:
-    return GameSessionKey(
-        guild_id=100,
-        channel_id=200,
-    )
+key = make_session_key()
 
-
-def create_started_game() -> Game:
-    game = Game.create(
-        host_id=1,
-    )
-
-    game.add_player(2)
-    game.add_player(3)
-
-    game.start_game(
-        secret_word="pizza",
-        impostor_id=2,
-    )
-
-    return game
-
-
-def test_concurrent_create_allows_only_one_game():
+def test_concurrent_create_allows_only_one_game(lock_manager):
     async def scenario():
         repository = YieldingGameRepository()
-
-        lock_manager = AsyncioSessionLockManager()
 
         use_case = CreateGame(
             repository=repository,
             lock_manager=lock_manager,
         )
-
-        key = create_key()
 
         results = await asyncio.gather(
             use_case.execute(
@@ -180,13 +156,9 @@ def test_concurrent_create_allows_only_one_game():
     asyncio.run(scenario())
 
 
-def test_concurrent_joins_preserve_both_players():
+def test_concurrent_joins_preserve_both_players(lock_manager):
     async def scenario():
         repository = CopyingYieldingRepository()
-
-        lock_manager = AsyncioSessionLockManager()
-
-        key = create_key()
 
         await repository.save(
             key=key,
@@ -230,13 +202,9 @@ def test_concurrent_joins_preserve_both_players():
     asyncio.run(scenario())
 
 
-def test_concurrent_duplicate_join_is_rejected():
+def test_concurrent_duplicate_join_is_rejected(lock_manager):
     async def scenario():
         repository = CopyingYieldingRepository()
-
-        lock_manager = AsyncioSessionLockManager()
-
-        key = create_key()
 
         await repository.save(
             key=key,
@@ -301,17 +269,16 @@ def test_concurrent_duplicate_join_is_rejected():
     asyncio.run(scenario())
 
 
-def test_concurrent_finish_and_cancel_have_single_winner():
+
+def test_concurrent_finish_and_cancel_have_single_winner(lock_manager):
     async def scenario():
+        game = make_started_game()
+
         repository = CopyingYieldingRepository()
-
-        lock_manager = AsyncioSessionLockManager()
-
-        key = create_key()
 
         await repository.save(
             key=key,
-            game=create_started_game(),
+            game=game,
         )
 
         finish_game = FinishGame(

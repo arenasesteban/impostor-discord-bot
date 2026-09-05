@@ -10,6 +10,9 @@ from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import (
     GameSessionKey,
 )
+from impostor_bot.game.state import (
+    GameState,
+)
 from impostor_bot.infrastructure.repositories.postgres_game_repository import (
     PostgresGameRepository,
 )
@@ -243,7 +246,6 @@ async def test_recovery_removes_persisted_waiting_game_when_lobby_is_missing(
     )
 
 
-@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_repeated_recovery_does_not_duplicate_postgres_state(
     postgres_session_factory,
@@ -349,7 +351,6 @@ async def test_repeated_recovery_does_not_duplicate_postgres_state(
     assert discord_sessions_count == 1
 
 
-@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_stale_postgres_session_remains_clean_after_second_recovery(
     postgres_session_factory,
@@ -447,7 +448,6 @@ async def test_stale_postgres_session_remains_clean_after_second_recovery(
     assert metadata_count == 0
 
 
-@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_runtime_shutdown_does_not_delete_persisted_session(
     postgres_session_factory,
@@ -512,3 +512,180 @@ async def test_runtime_shutdown_does_not_delete_persisted_session(
         await (
             runtime_after_restart.close()
         )
+
+
+@pytest.mark.asyncio
+async def test_recovery_handles_mixed_postgres_sessions(
+    postgres_session_factory,
+):
+    game_repository = (
+        PostgresGameRepository(
+            postgres_session_factory
+        )
+    )
+
+    lobby_repository = (
+        PostgresLobbyMessageRepository(
+            postgres_session_factory
+        )
+    )
+
+    waiting_valid_key = (
+        GameSessionKey(
+            guild_id=100,
+            channel_id=200,
+        )
+    )
+
+    waiting_stale_key = (
+        GameSessionKey(
+            guild_id=100,
+            channel_id=201,
+        )
+    )
+
+    started_key = GameSessionKey(
+        guild_id=101,
+        channel_id=200,
+    )
+
+    # WAITING recoverable session.
+    waiting_valid_game = (
+        Game.create(host_id=1)
+    )
+
+    await game_repository.save(
+        key=waiting_valid_key,
+        game=waiting_valid_game,
+    )
+
+    await lobby_repository.save(
+        key=waiting_valid_key,
+        message_id=1001,
+    )
+
+    # WAITING stale session.
+    waiting_stale_game = (
+        Game.create(host_id=2)
+    )
+
+    await game_repository.save(
+        key=waiting_stale_key,
+        game=waiting_stale_game,
+    )
+
+    await lobby_repository.save(
+        key=waiting_stale_key,
+        message_id=1002,
+    )
+
+    # STARTED session whose old lobby
+    # no longer exists.
+    started_game = Game.create(
+        host_id=3
+    )
+
+    started_game.add_player(4)
+    started_game.add_player(5)
+
+    started_game.start_game(
+        secret_word="pizza",
+        impostor_id=4,
+    )
+
+    await game_repository.save(
+        key=started_key,
+        game=started_game,
+    )
+
+    await lobby_repository.save(
+        key=started_key,
+        message_id=1003,
+    )
+
+    gateway = FakeRecoveryGateway(
+        existing_channels={
+            waiting_valid_key,
+            waiting_stale_key,
+            started_key,
+        },
+        existing_lobbies={
+            (
+                waiting_valid_key,
+                1001,
+            ),
+        },
+    )
+
+    cache: dict[
+        GameSessionKey,
+        int,
+    ] = {}
+
+    recovery = RecoverGameSessions(
+        game_repository=game_repository,
+        lobby_repository=lobby_repository,
+        gateway=gateway,
+        lobby_cache=cache,
+    )
+
+    summary = await recovery.execute()
+
+    assert summary.discovered == 3
+    assert summary.restored_waiting == 1
+    assert summary.restored_started == 1
+    assert summary.stale_removed == 1
+    assert summary.detached_lobbies == 1
+
+    restored_waiting = (
+        await game_repository.get(
+            waiting_valid_key
+        )
+    )
+
+    stale_waiting = (
+        await game_repository.get(
+            waiting_stale_key
+        )
+    )
+
+    restored_started = (
+        await game_repository.get(
+            started_key
+        )
+    )
+
+    assert restored_waiting is not None
+    assert stale_waiting is None
+
+    assert restored_started is not None
+
+    assert (
+        restored_started.status
+        == GameState.STARTED
+    )
+
+    assert (
+        await lobby_repository.get(
+            waiting_valid_key
+        )
+        == 1001
+    )
+
+    assert (
+        await lobby_repository.get(
+            waiting_stale_key
+        )
+        is None
+    )
+
+    assert (
+        await lobby_repository.get(
+            started_key
+        )
+        is None
+    )
+
+    assert cache == {
+        waiting_valid_key: 1001,
+    }

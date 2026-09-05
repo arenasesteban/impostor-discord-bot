@@ -19,26 +19,17 @@ from impostor_bot.discord.messages import (
     build_game_cancelled_message,
 )
 
+from tests.helpers.factories import (
+    make_started_game,
+)
+
 
 def create_waiting_game() -> Game:
     return Game.create(host_id=1)
 
 
-def create_started_game() -> Game:
-    game = Game.create(host_id=1)
-    game.add_player(2)
-    game.add_player(3)
-
-    game.start_game(
-        secret_word="pizza",
-        impostor_id=2,
-    )
-
-    return game
-
-
 def create_finished_game() -> Game:
-    game = create_started_game()
+    game = make_started_game()
     game.finish()
 
     return game
@@ -52,7 +43,7 @@ def create_cancelled_waiting_game() -> Game:
 
 
 def create_cancelled_started_game() -> Game:
-    game = create_started_game()
+    game = make_started_game()
     game.cancel()
 
     return game
