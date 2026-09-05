@@ -32,7 +32,8 @@ async def fetch_lobby_message(client: discord.Client, key: GameSessionKey) -> di
             ) from error
 
     if not hasattr(channel, "fetch_message"):
-            return None
+        active_lobby_messages.pop(key, None)
+        return None
 
     try:
         return await channel.fetch_message(message_id)
@@ -83,9 +84,20 @@ async def close_lobby_message(client: discord.Client, key: GameSessionKey, conte
         active_lobby_messages.pop(key, None)
         return
 
-    await message.edit(
-        content=content,
-        view=view,
-    )
+    try:
+        await message.edit(
+            content=content,
+            view=view,
+        )
+
+    except discord.NotFound:
+        active_lobby_messages.pop(key, None)
+        return
+
+    except (discord.Forbidden, discord.HTTPException) as error:
+        raise DiscordAPIError(
+            "Discord lobby message "
+            "could not be closed."
+        ) from error
 
     active_lobby_messages.pop(key, None)

@@ -238,5 +238,3 @@ async def test_lobby_repository_isolates_session_metadata(
 
     assert await lobby_repository.get(key_a) == 111
     assert await lobby_repository.get(key_b) == 222
-
-

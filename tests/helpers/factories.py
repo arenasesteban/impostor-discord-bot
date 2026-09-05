@@ -9,7 +9,6 @@ def make_session_key(*, guild_id: int = 1, channel_id: int = 1) -> GameSessionKe
     )
 
 
-
 def make_ready_game(*, host_id: int = 1, player_ids: tuple[int, ...] = (2, 3)) -> Game:
     game = Game.create(host_id=host_id)
 
