@@ -23,8 +23,10 @@ async def postgres_session_factory():
     )
 
     if not database_url:
-        pytest.skip(
-            "TEST_DATABASE_URL is not configured."
+        pytest.fail(
+            "TEST_DATABASE_URL is required "
+            "for integration tests.",
+            pytrace=False,
         )
 
     engine = create_database_engine(
