@@ -1,17 +1,13 @@
 import logging
-
-from typing import Protocol
-from dataclasses import dataclass
 from collections.abc import MutableMapping
+from dataclasses import dataclass
+from typing import Protocol
 
-from impostor_bot.game.state import GameState
 from impostor_bot.game.session_key import GameSessionKey
-
+from impostor_bot.game.state import GameState
+from impostor_bot.observability import log_event
 from impostor_bot.ports.game_repository import GameRepository
 from impostor_bot.ports.lobby_message_repository import LobbyMessageRepository
-
-from impostor_bot.observability import log_event
-
 
 logger = logging.getLogger(__name__)
 

@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -5,19 +7,13 @@ import pytest
 
 from impostor_bot.discord.error_handling import (
     handle_known_error,
-)
-from impostor_bot.errors.infrastructure import (
-    DatabaseUnavailableError,
-)
-import asyncio
-import logging
-
-from impostor_bot.discord.error_handling import (
-    handle_known_error,
     handle_unexpected_error,
 )
 from impostor_bot.errors import (
     DatabaseError,
+)
+from impostor_bot.errors.infrastructure import (
+    DatabaseUnavailableError,
 )
 
 

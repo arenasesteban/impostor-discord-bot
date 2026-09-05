@@ -1,29 +1,28 @@
-import discord
 import logging
 
+import discord
+
+from impostor_bot.application.exceptions import ApplicationError
+from impostor_bot.application.join_game import JoinGame
+from impostor_bot.application.leave_game import LeaveGame
 from impostor_bot.discord.context import get_game_session_key
-from impostor_bot.discord.error_handling import handle_known_error, handle_unexpected_error
-from impostor_bot.discord.state import (
-    game_repository,
-    session_lock_manager,
+from impostor_bot.discord.error_handling import (
+    handle_known_error,
+    handle_unexpected_error,
 )
 from impostor_bot.discord.messages import (
     build_game_created_message,
     build_player_joined_message,
-    build_player_left_message
+    build_player_left_message,
 )
-
-from impostor_bot.application.join_game import JoinGame
-from impostor_bot.application.leave_game import LeaveGame
-from impostor_bot.application.exceptions import ApplicationError
-
-from impostor_bot.game.player import Player
-from impostor_bot.game.exceptions import GameRuleError
-
+from impostor_bot.discord.state import (
+    game_repository,
+    session_lock_manager,
+)
 from impostor_bot.errors import InfrastructureError
-
+from impostor_bot.game.exceptions import GameRuleError
+from impostor_bot.game.player import Player
 from impostor_bot.observability.logging import log_event
-
 
 logger = logging.getLogger(__name__)
 

@@ -1,19 +1,20 @@
 import pytest
-
 from sqlalchemy.exc import (
     InterfaceError,
     OperationalError,
     SQLAlchemyError,
 )
 
-from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.errors.infrastructure import (
     DatabaseError,
     DatabaseUnavailableError,
 )
-from impostor_bot.infrastructure.repositories.postgres_game_repository import PostgresGameRepository
+from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.infrastructure.database.error_translation import (
     translate_database_error,
+)
+from impostor_bot.infrastructure.repositories.postgres_game_repository import (
+    PostgresGameRepository,
 )
 
 

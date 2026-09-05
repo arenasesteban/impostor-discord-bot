@@ -1,50 +1,45 @@
-import discord
 import logging
+from typing import Literal
 
-from typing import Literal, TypeAlias
-
-from impostor_bot.discord.messages import send_error
-from impostor_bot.discord.logging_context import interaction_log_context
+import discord
 
 from impostor_bot.application.exceptions import (
     ApplicationError,
     GameAlreadyExistsError,
     GameNotFoundError,
-    NotGameHostError
+    NotGameHostError,
 )
-
+from impostor_bot.discord.logging_context import interaction_log_context
+from impostor_bot.discord.messages import send_error
+from impostor_bot.errors import (
+    DatabaseError,
+    DiscordAPIError,
+    InfrastructureError,
+    WordProviderError,
+)
 from impostor_bot.game.exceptions import (
     GameAlreadyStartedError,
+    GameInvariantError,
     GameRuleError,
     HostCannotLeaveError,
     InvalidGameStateError,
     NotEnoughPlayersError,
     PlayerAlreadyJoinedError,
     PlayerNotFoundError,
-    GameInvariantError
 )
-
-from impostor_bot.errors import (
-    DatabaseError,
-    DiscordAPIError,
-    InfrastructureError,
-    WordProviderError
-)
-
 from impostor_bot.observability.logging import log_error
 
-
-ErrorOperation: TypeAlias = Literal[
+type ErrorOperation = Literal[
     "create",
     "join",
     "leave",
     "start",
     "finish",
     "cancel",
-    "status"
+    "status",
 ]
 
-KnownUserError: TypeAlias = (
+type KnownUserError = (
     ApplicationError
     | GameRuleError
     | InfrastructureError

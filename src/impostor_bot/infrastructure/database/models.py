@@ -18,7 +18,6 @@ from sqlalchemy.orm import (
 from impostor_bot.game.state import GameState
 from impostor_bot.infrastructure.database.base import Base
 
-
 _VALID_STATES_SQL = ", ".join(
     f"'{state.value}'"
     for state in GameState
@@ -58,7 +57,7 @@ class GameRecord(Base):
         nullable=True
     )
 
-    players: Mapped[list["GamePlayerRecord"]] = relationship(
+    players: Mapped[list[GamePlayerRecord]] = relationship(
         "GamePlayerRecord",
         back_populates="game",
         cascade="all, delete-orphan",

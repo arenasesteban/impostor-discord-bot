@@ -1,59 +1,58 @@
-import discord
 import logging
 
+import discord
 from discord import app_commands
 
-from impostor_bot.discord.views import LobbyView
+from impostor_bot.application.cancel_game import CancelGame
+from impostor_bot.application.create_game import CreateGame
+from impostor_bot.application.exceptions import ApplicationError
+from impostor_bot.application.finish_game import FinishGame
+from impostor_bot.application.get_game_status import GetGameStatus
+from impostor_bot.application.join_game import JoinGame
+from impostor_bot.application.leave_game import LeaveGame
+from impostor_bot.application.start_game import StartGame
 from impostor_bot.discord.context import get_game_session_key
-from impostor_bot.discord.role_delivery import deliver_roles
-from impostor_bot.discord.error_handling import handle_known_error, handle_unexpected_error
-from impostor_bot.discord.state import (
-    active_lobby_messages,
-    game_repository,
-    lobby_message_repository,
-    session_lock_manager
+from impostor_bot.discord.error_handling import (
+    handle_known_error,
 )
 from impostor_bot.discord.lobby import (
     close_lobby_message,
     refresh_lobby_message,
-    update_lobby_message
+    update_lobby_message,
 )
 from impostor_bot.discord.messages import (
-    build_game_created_message,
-    build_game_status_message,
+    build_dm_error_message,
     build_game_cancelled_message,
-    build_game_started_message,
+    build_game_created_message,
     build_game_finished_message,
-    build_player_joined_message,
-    build_player_left_message,
-    build_lobby_started_message,
+    build_game_started_message,
+    build_game_status_message,
+    build_help_message,
     build_lobby_cancelled_message,
     build_lobby_finished_message,
-    build_dm_error_message,
-    build_help_message
+    build_lobby_started_message,
+    build_player_joined_message,
+    build_player_left_message,
 )
-
-from impostor_bot.game.player import Player
-from impostor_bot.game.exceptions import GameRuleError
-
-from impostor_bot.application.create_game import CreateGame
-from impostor_bot.application.start_game import StartGame
-from impostor_bot.application.join_game import JoinGame
-from impostor_bot.application.leave_game import LeaveGame
-from impostor_bot.application.cancel_game import CancelGame
-from impostor_bot.application.finish_game import FinishGame
-from impostor_bot.application.get_game_status import GetGameStatus
-from impostor_bot.application.exceptions import ApplicationError
-
-from impostor_bot.infrastructure.random.python_random_selector import PythonRandomSelector
-from impostor_bot.infrastructure.word_providers.static_word_provider import StaticWordProvider
-
-from impostor_bot.ports.lobby_message_repository import LobbyMessageRepository
-
+from impostor_bot.discord.role_delivery import deliver_roles
+from impostor_bot.discord.state import (
+    active_lobby_messages,
+    game_repository,
+    lobby_message_repository,
+    session_lock_manager,
+)
+from impostor_bot.discord.views import LobbyView
 from impostor_bot.errors import InfrastructureError
-
+from impostor_bot.game.exceptions import GameRuleError
+from impostor_bot.game.player import Player
+from impostor_bot.infrastructure.random.python_random_selector import (
+    PythonRandomSelector,
+)
+from impostor_bot.infrastructure.word_providers.static_word_provider import (
+    StaticWordProvider,
+)
 from impostor_bot.observability.logging import log_event
-
+from impostor_bot.ports.lobby_message_repository import LobbyMessageRepository
 
 logger = logging.getLogger(__name__)
 

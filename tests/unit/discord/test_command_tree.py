@@ -6,7 +6,6 @@ from unittest.mock import (
 
 import discord
 import pytest
-
 from discord import app_commands
 
 from impostor_bot.discord.command_tree import (

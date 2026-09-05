@@ -1,13 +1,11 @@
 import pytest
+from tests.helpers.factories import (
+    make_started_game,
+)
 
 from impostor_bot.game.exceptions import InvalidGameStateError
 from impostor_bot.game.game import Game
 from impostor_bot.game.state import GameState
-
-from tests.helpers.factories import (
-    make_ready_game,
-    make_started_game,
-)
 
 
 def test_started_game_can_be_finished():

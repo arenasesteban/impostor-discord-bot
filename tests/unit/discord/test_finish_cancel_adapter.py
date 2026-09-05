@@ -1,7 +1,11 @@
 import asyncio
+import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
-import logging
+
+from tests.helpers.factories import (
+    make_started_game,
+)
 
 from impostor_bot.application.exceptions import (
     GameNotFoundError,
@@ -11,17 +15,13 @@ from impostor_bot.discord.commands import (
     handle_cancel,
     handle_finish,
 )
+from impostor_bot.discord.messages import (
+    build_game_cancelled_message,
+)
 from impostor_bot.game.exceptions import InvalidGameStateError
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.game.state import GameState
-from impostor_bot.discord.messages import (
-    build_game_cancelled_message,
-)
-
-from tests.helpers.factories import (
-    make_started_game,
-)
 
 
 def create_waiting_game() -> Game:

@@ -10,7 +10,7 @@ EMOJI_WARNING = "⚠️"
 EMOJI_ERROR = "❌"
 EMOJI_DOOR = "🚪"
 EMOJI_DICE = "🎲"
-EMOJI_INFO = "ℹ️"
+EMOJI_INFO = "ℹ️"  # noqa: RUF001
 EMOJI_LIST = "📋"
 EMOJI_LOCK = "🔒"
 

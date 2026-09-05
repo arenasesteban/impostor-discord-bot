@@ -1,7 +1,7 @@
 import asyncio
+import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
-import logging
 
 import pytest
 

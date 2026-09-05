@@ -1,12 +1,10 @@
 import discord
 
-from impostor_bot.discord.state import active_lobby_messages
 from impostor_bot.discord.messages import build_game_created_message
-
+from impostor_bot.discord.state import active_lobby_messages
+from impostor_bot.errors.infrastructure import DiscordAPIError
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
-
-from impostor_bot.errors.infrastructure import DiscordAPIError
 
 
 async def fetch_lobby_message(client: discord.Client, key: GameSessionKey) -> discord.Message | None:

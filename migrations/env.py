@@ -6,13 +6,11 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
+import impostor_bot.infrastructure.database.models  # noqa: F401
 from impostor_bot.infrastructure.database.base import Base
 from impostor_bot.infrastructure.database.settings import (
     get_database_url,
 )
-
-import impostor_bot.infrastructure.database.models  # noqa: F401
-
 
 config = context.config
 

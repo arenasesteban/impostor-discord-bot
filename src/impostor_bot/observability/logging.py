@@ -1,16 +1,9 @@
 import json
 import logging
-
+from datetime import UTC, datetime
 from typing import Any
-from datetime import (
-    UTC,
-    datetime
-)
 
-from impostor_bot.observability.sanitization import (
-    redact_string,
-    sanitize_value
-)
+from impostor_bot.observability.sanitization import redact_string, sanitize_value
 
 
 class JsonFormatter(logging.Formatter):

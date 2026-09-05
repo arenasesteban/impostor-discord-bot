@@ -1,28 +1,23 @@
 import asyncio
 
 import pytest
+from tests.helpers.factories import (
+    make_session_key,
+    make_started_game,
+)
+from tests.helpers.fakes import FakeGameRepository
 
 from impostor_bot.application.exceptions import GameNotFoundError
 from impostor_bot.application.join_game import JoinGame
 from impostor_bot.application.leave_game import LeaveGame
-
 from impostor_bot.game.exceptions import (
     GameAlreadyStartedError,
     HostCannotLeaveError,
     PlayerAlreadyJoinedError,
     PlayerNotFoundError,
 )
-
 from impostor_bot.game.game import Game
 from impostor_bot.game.player import Player
-
-from tests.helpers.fakes import FakeGameRepository
-from tests.helpers.factories import (
-    make_session_key,
-    make_ready_game,
-    make_started_game,
-)
-
 
 key = make_session_key()
 

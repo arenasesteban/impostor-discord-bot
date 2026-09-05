@@ -5,7 +5,6 @@ from impostor_bot.observability.logging import (
     log_event,
 )
 
-
 __all__ = [
     "JsonFormatter",
     "configure_logging",

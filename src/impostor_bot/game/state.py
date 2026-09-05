@@ -1,10 +1,10 @@
 from enum import StrEnum
 
 from impostor_bot.constants import (
+    STATUS_CANCELLED,
+    STATUS_FINISHED,
     STATUS_OPEN,
     STATUS_STARTED,
-    STATUS_CANCELLED,
-    STATUS_FINISHED
 )
 
 

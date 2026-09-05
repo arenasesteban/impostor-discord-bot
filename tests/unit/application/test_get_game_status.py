@@ -1,6 +1,7 @@
 import asyncio
 
 import pytest
+from tests.helpers.factories import make_session_key
 
 from impostor_bot.application.exceptions import GameNotFoundError
 from impostor_bot.application.get_game_status import GetGameStatus
@@ -8,9 +9,6 @@ from impostor_bot.game.game import Game
 from impostor_bot.infrastructure.repositories.in_memory_game_repository import (
     InMemoryGameRepository,
 )
-
-from tests.helpers.factories import make_session_key
-
 
 key = make_session_key()
 

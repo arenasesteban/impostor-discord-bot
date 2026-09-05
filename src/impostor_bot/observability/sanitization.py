@@ -1,7 +1,6 @@
 import re
 from collections.abc import Mapping
 
-
 REDACTED = "[REDACTED]"
 
 SENSITIVE_KEYS = frozenset(

@@ -1,9 +1,8 @@
 from json import JSONDecodeError
 
-from impostor_bot.words.loader import get_random_word
-from impostor_bot.words.exceptions import WordError
-
 from impostor_bot.errors.infrastructure import WordProviderError
+from impostor_bot.words.exceptions import WordError
+from impostor_bot.words.loader import get_random_word
 
 
 class StaticWordProvider:

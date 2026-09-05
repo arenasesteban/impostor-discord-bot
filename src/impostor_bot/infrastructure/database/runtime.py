@@ -1,16 +1,21 @@
 from dataclasses import dataclass
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncEngine
 
-from impostor_bot.infrastructure.repositories.postgres_game_repository import PostgresGameRepository
-from impostor_bot.infrastructure.repositories.postgres_lobby_message_repository import PostgresLobbyMessageRepository
-
-from impostor_bot.infrastructure.database.error_translation import translate_database_error
+from impostor_bot.infrastructure.database.error_translation import (
+    translate_database_error,
+)
 from impostor_bot.infrastructure.database.session import (
     create_database_engine,
     create_session_factory,
+)
+from impostor_bot.infrastructure.repositories.postgres_game_repository import (
+    PostgresGameRepository,
+)
+from impostor_bot.infrastructure.repositories.postgres_lobby_message_repository import (
+    PostgresLobbyMessageRepository,
 )
 
 

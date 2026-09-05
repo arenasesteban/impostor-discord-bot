@@ -1,13 +1,13 @@
-import discord
-import pytest
 import asyncio
-
 from types import SimpleNamespace
 from unittest.mock import (
     AsyncMock,
     MagicMock,
     patch,
 )
+
+import discord
+import pytest
 
 from impostor_bot.discord.lobby import (
     close_lobby_message,

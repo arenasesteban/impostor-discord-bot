@@ -1,10 +1,8 @@
 import discord
 
 from impostor_bot.discord.views import LobbyView
-
-from impostor_bot.game.session_key import GameSessionKey
-
 from impostor_bot.errors.infrastructure import DiscordAPIError
+from impostor_bot.game.session_key import GameSessionKey
 
 
 class DiscordPySessionRecoveryGateway:

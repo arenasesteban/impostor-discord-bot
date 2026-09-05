@@ -1,6 +1,5 @@
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
-from impostor_bot.game.state import GameState
 from impostor_bot.infrastructure.database.game_mapper import (
     build_player_records,
 )
