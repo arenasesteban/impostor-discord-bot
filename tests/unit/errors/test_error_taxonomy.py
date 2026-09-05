@@ -4,13 +4,6 @@ from impostor_bot.application.exceptions import (
     GameNotFoundError,
     NotGameHostError,
 )
-from impostor_bot.errors import (
-    DatabaseError,
-    DatabaseUnavailableError,
-    DiscordAPIError,
-    InfrastructureError,
-    WordProviderError,
-)
 from impostor_bot.game.exceptions import (
     GameAlreadyStartedError,
     GameError,

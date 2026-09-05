@@ -1,16 +1,8 @@
 import json
 import logging
+from datetime import UTC, datetime
 
-from typing import Any
-from datetime import (
-    UTC,
-    datetime
-)
-
-from impostor_bot.observability.sanitization import (
-    redact_string,
-    sanitize_value
-)
+from impostor_bot.observability.sanitization import redact_string, sanitize_value
 
 
 class JsonFormatter(logging.Formatter):
@@ -20,7 +12,7 @@ class JsonFormatter(logging.Formatter):
         self._sensitive_values = sensitive_values
 
     def format(self, record: logging.LogRecord) -> str:
-        payload: dict[str, Any] = {
+        payload: dict[str, object] = {
             "timestamp": datetime.fromtimestamp(
                 record.created,
                 tz=UTC,
@@ -46,12 +38,32 @@ class JsonFormatter(logging.Formatter):
         if record.exc_info:
             exc_type, exc_value, _ = record.exc_info
 
-            traceback_text = self.formatException(record.exc_info)
+            traceback_text = self.formatException(
+                record.exc_info
+            )
+
+            exception_type = (
+                exc_type.__name__
+                if exc_type is not None
+                else "UnknownException"
+            )
+
+            exception_message = (
+                str(exc_value)
+                if exc_value is not None
+                else ""
+            )
 
             payload["exception"] = {
-                "type":  exc_type.__name__,
-                "message": redact_string(str(exc_value), self._sensitive_values),
-                "traceback": redact_string(traceback_text, self._sensitive_values)
+                "type": exception_type,
+                "message": redact_string(
+                    exception_message,
+                    self._sensitive_values,
+                ),
+                "traceback": redact_string(
+                    traceback_text,
+                    self._sensitive_values,
+                ),
             }
 
         return json.dumps(
@@ -94,7 +106,14 @@ def log_event(logger: logging.Logger, event: str, *, level: int = logging.INFO, 
     )
 
 
-def log_error(logger: logging.Logger, event: str, error: BaseException, *, level: int = logging.ERROR, **context: object) -> None:
+def log_error(
+    logger: logging.Logger,
+    event: str,
+    error: BaseException,
+    *,
+    level: int = logging.ERROR,
+    **context: object,
+) -> None:
     logger.log(
         level,
         event,

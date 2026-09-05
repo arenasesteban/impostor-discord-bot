@@ -1,4 +1,5 @@
 import asyncio
+
 import pytest
 
 from impostor_bot.game.session_key import GameSessionKey

@@ -7,9 +7,9 @@ from impostor_bot.errors.infrastructure import (
 )
 
 __all__ = [
-    "InfrastructureError",
     "DatabaseError",
     "DatabaseUnavailableError",
     "DiscordAPIError",
+    "InfrastructureError",
     "WordProviderError",
 ]

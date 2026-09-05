@@ -1,13 +1,8 @@
-from impostor_bot.application.exceptions import (
-    GameAlreadyExistsError
-)
+from impostor_bot.application.exceptions import GameAlreadyExistsError
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.ports.game_repository import GameRepository
-from impostor_bot.ports.session_lock_manager import (
-    SessionLockManager
-)
-
+from impostor_bot.ports.session_lock_manager import SessionLockManager
 
 
 class CreateGame:

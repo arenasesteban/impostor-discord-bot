@@ -1,12 +1,10 @@
 import discord
 
-from impostor_bot.discord.state import active_lobby_messages
 from impostor_bot.discord.messages import build_game_created_message
-
+from impostor_bot.discord.state import active_lobby_messages
+from impostor_bot.errors.infrastructure import DiscordAPIError
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
-
-from impostor_bot.errors.infrastructure import DiscordAPIError
 
 
 async def fetch_lobby_message(client: discord.Client, key: GameSessionKey) -> discord.Message | None:
@@ -16,7 +14,6 @@ async def fetch_lobby_message(client: discord.Client, key: GameSessionKey) -> di
         return None
 
     channel = client.get_channel(key.channel_id)
-
 
     if channel is None:
         try:
@@ -31,7 +28,7 @@ async def fetch_lobby_message(client: discord.Client, key: GameSessionKey) -> di
                 "Discord lobby channel could not be accessed."
             ) from error
 
-    if not hasattr(channel, "fetch_message"):
+    if not isinstance(channel, (discord.TextChannel, discord.Thread, discord.VoiceChannel, discord.StageChannel)):
         active_lobby_messages.pop(key, None)
         return None
 

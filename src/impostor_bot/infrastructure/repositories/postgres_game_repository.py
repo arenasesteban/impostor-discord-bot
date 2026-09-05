@@ -1,12 +1,12 @@
 from sqlalchemy import delete, select
-from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import selectinload
 
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
-
-from impostor_bot.infrastructure.database.session import AsyncSessionFactory
-from impostor_bot.infrastructure.database.error_translation import translate_database_error
+from impostor_bot.infrastructure.database.error_translation import (
+    translate_database_error,
+)
 from impostor_bot.infrastructure.database.game_mapper import (
     apply_game_to_record,
     build_player_records,
@@ -16,6 +16,7 @@ from impostor_bot.infrastructure.database.models import (
     GamePlayerRecord,
     GameRecord,
 )
+from impostor_bot.infrastructure.database.session import AsyncSessionFactory
 
 
 class PostgresGameRepository:

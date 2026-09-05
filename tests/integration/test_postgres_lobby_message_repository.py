@@ -9,7 +9,6 @@ from impostor_bot.infrastructure.repositories.postgres_lobby_message_repository 
     PostgresLobbyMessageRepository,
 )
 
-
 pytestmark = pytest.mark.integration
 
 

@@ -1,17 +1,16 @@
 
-import discord
-import pytest
-
 from unittest.mock import (
     AsyncMock,
     MagicMock,
     patch,
 )
 
+import discord
+import pytest
+
 from impostor_bot.discord.views import (
     LobbyView,
 )
-
 
 
 @pytest.mark.asyncio

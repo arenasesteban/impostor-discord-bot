@@ -1,7 +1,11 @@
 import asyncio
+import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
-import logging
+
+from tests.helpers.factories import (
+    make_started_game,
+)
 
 from impostor_bot.application.exceptions import NotGameHostError
 from impostor_bot.application.start_game import StartGameResult
@@ -11,10 +15,6 @@ from impostor_bot.game.exceptions import NotEnoughPlayersError
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
 
-from tests.helpers.factories import (
-    make_ready_game,
-    make_started_game,
-)
 
 def create_cancelled_game() -> Game:
     game = make_started_game()

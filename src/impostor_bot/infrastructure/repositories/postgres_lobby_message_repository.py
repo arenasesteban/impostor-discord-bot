@@ -2,10 +2,11 @@ from sqlalchemy import delete
 from sqlalchemy.exc import SQLAlchemyError
 
 from impostor_bot.game.session_key import GameSessionKey
-
-from impostor_bot.infrastructure.database.session import AsyncSessionFactory
+from impostor_bot.infrastructure.database.error_translation import (
+    translate_database_error,
+)
 from impostor_bot.infrastructure.database.models import DiscordSessionRecord
-from impostor_bot.infrastructure.database.error_translation import translate_database_error
+from impostor_bot.infrastructure.database.session import AsyncSessionFactory
 
 
 class PostgresLobbyMessageRepository:

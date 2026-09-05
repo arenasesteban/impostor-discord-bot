@@ -1,18 +1,17 @@
 import pytest
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.game.state import GameState
-from impostor_bot.infrastructure.repositories.postgres_game_repository import (
-    PostgresGameRepository,
-)
-from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
 from impostor_bot.infrastructure.database.models import (
     GamePlayerRecord,
     GameRecord,
 )
-
+from impostor_bot.infrastructure.repositories.postgres_game_repository import (
+    PostgresGameRepository,
+)
 
 pytestmark = pytest.mark.integration
 

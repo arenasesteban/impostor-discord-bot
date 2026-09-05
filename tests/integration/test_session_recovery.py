@@ -1,6 +1,6 @@
 import os
-import pytest
 
+import pytest
 from sqlalchemy import func, select
 
 from impostor_bot.discord.recovery import (
@@ -13,12 +13,6 @@ from impostor_bot.game.session_key import (
 from impostor_bot.game.state import (
     GameState,
 )
-from impostor_bot.infrastructure.repositories.postgres_game_repository import (
-    PostgresGameRepository,
-)
-from impostor_bot.infrastructure.repositories.postgres_lobby_message_repository import (
-    PostgresLobbyMessageRepository,
-)
 from impostor_bot.infrastructure.database.models import (
     DiscordSessionRecord,
     GamePlayerRecord,
@@ -27,7 +21,12 @@ from impostor_bot.infrastructure.database.models import (
 from impostor_bot.infrastructure.database.runtime import (
     create_postgres_runtime,
 )
-
+from impostor_bot.infrastructure.repositories.postgres_game_repository import (
+    PostgresGameRepository,
+)
+from impostor_bot.infrastructure.repositories.postgres_lobby_message_repository import (
+    PostgresLobbyMessageRepository,
+)
 
 pytestmark = pytest.mark.integration
 

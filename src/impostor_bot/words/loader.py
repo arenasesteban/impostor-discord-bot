@@ -3,13 +3,13 @@ import random
 from pathlib import Path
 
 from impostor_bot.constants import DEFAULT_WORD_CATEGORY
-from .exceptions import (
-    WordsFileNotFoundError,
-    EmptyWordsFileError,
-    CategoryNotFoundError,
-    EmptyCategoryError
-)
 
+from .exceptions import (
+    CategoryNotFoundError,
+    EmptyCategoryError,
+    EmptyWordsFileError,
+    WordsFileNotFoundError,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 WORDS_FILE = PROJECT_ROOT / "data" / "words.json"
@@ -21,12 +21,12 @@ def load_words() -> dict[str, list[str]]:
             f"Words file not found: {WORDS_FILE}"
         )
 
-    with open(WORDS_FILE, "r", encoding="utf-8") as file:
+    with open(WORDS_FILE, encoding="utf-8") as file:
         data = json.load(file)
 
     if not isinstance(data, dict) or not data:
         raise EmptyWordsFileError(
-            f"Words file is empty or not in the expected format."
+            "Words file is empty or not in the expected format."
         )
 
     return data

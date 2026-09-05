@@ -1,17 +1,9 @@
-from sqlalchemy.exc import (
-    DBAPIError,
-    InterfaceError,
-    OperationalError,
-    SQLAlchemyError
-)
+from sqlalchemy.exc import DBAPIError, InterfaceError, OperationalError, SQLAlchemyError
 
-from impostor_bot.errors.infrastructure import (
-    DatabaseError,
-    DatabaseUnavailableError
-)
+from impostor_bot.errors.infrastructure import DatabaseError, DatabaseUnavailableError
 
 
-def translate_database_error(error: SQLAlchemyError) -> DatabaseError:
+def translate_database_error(error: SQLAlchemyError | OSError) -> DatabaseError:
     if isinstance(error, (OperationalError, InterfaceError, OSError)):
         return DatabaseUnavailableError(
             "Database is unavailable."

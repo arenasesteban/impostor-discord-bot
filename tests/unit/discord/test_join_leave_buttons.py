@@ -6,7 +6,6 @@ from impostor_bot.discord.views import (
     handle_join_button,
     handle_leave_button,
 )
-
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
 

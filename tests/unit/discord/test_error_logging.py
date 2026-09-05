@@ -1,16 +1,16 @@
 import logging
+from types import SimpleNamespace
 from unittest.mock import (
     AsyncMock,
     MagicMock,
     patch,
 )
-from types import SimpleNamespace
-
 
 import pytest
 
 from impostor_bot.discord.error_handling import (
-    handle_known_error, handle_unexpected_error
+    handle_known_error,
+    handle_unexpected_error,
 )
 from impostor_bot.errors import (
     DatabaseError,

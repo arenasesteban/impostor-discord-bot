@@ -4,7 +4,6 @@ from impostor_bot.constants import (
     IMPOSTOR_ROLE,
     MIN_PLAYERS,
 )
-
 from impostor_bot.game.exceptions import (
     GameAlreadyStartedError,
     GameInvariantError,
@@ -14,7 +13,6 @@ from impostor_bot.game.exceptions import (
     PlayerAlreadyJoinedError,
     PlayerNotFoundError,
 )
-
 from impostor_bot.game.state import GameState
 
 

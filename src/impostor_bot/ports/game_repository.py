@@ -13,3 +13,6 @@ class GameRepository(Protocol):
 
     async def delete(self, key: GameSessionKey) -> None:
         ...
+
+    async def list_active(self) -> list[tuple[GameSessionKey, Game]]:
+        ...

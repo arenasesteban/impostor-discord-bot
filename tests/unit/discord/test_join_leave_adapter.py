@@ -1,16 +1,15 @@
 import asyncio
+import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+from impostor_bot.application.exceptions import GameNotFoundError
 from impostor_bot.discord.commands import (
     handle_join,
     handle_leave,
 )
-import logging
-
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
-from impostor_bot.application.exceptions import GameNotFoundError
 
 
 def create_interaction(

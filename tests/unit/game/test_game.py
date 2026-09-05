@@ -1,29 +1,22 @@
 import pytest
-
-from impostor_bot.game.session import Session
-from impostor_bot.game.game import Game
-from impostor_bot.game.state import GameState
-
-from impostor_bot.game.exceptions import (
-    PlayerAlreadyJoinedError,
-    PlayerNotFoundError,
-    GameAlreadyStartedError,
-    NotEnoughPlayersError,
-    HostCannotLeaveError,
-    GameInvariantError,
-)
+from tests.helpers.factories import make_ready_game, make_started_game
 
 from impostor_bot.constants import (
+    MIN_PLAYERS,
     STATUS_OPEN,
     STATUS_STARTED,
-    STATUS_CANCELLED,
-    MIN_PLAYERS,
 )
-
-from tests.helpers.factories import (
-    make_started_game,
-    make_ready_game
+from impostor_bot.game.exceptions import (
+    GameAlreadyStartedError,
+    GameInvariantError,
+    HostCannotLeaveError,
+    NotEnoughPlayersError,
+    PlayerAlreadyJoinedError,
+    PlayerNotFoundError,
 )
+from impostor_bot.game.game import Game
+from impostor_bot.game.session import Session
+from impostor_bot.game.state import GameState
 
 
 def make_finished_game() -> Game:
@@ -310,20 +303,5 @@ def test_non_waiting_game_cannot_remove_players(game_factory):
     ],
 )
 def test_players_cannot_join_non_waiting_game(game):
-    with pytest.raises(GameAlreadyStartedError):
-        game.add_player(99)
-
-
-@pytest.mark.parametrize(
-    "game_factory",
-    [
-        make_started_game,
-        make_finished_game,
-        make_cancelled_game,
-    ],
-)
-def test_players_cannot_join_non_waiting_game(game_factory):
-    game = game_factory()
-
     with pytest.raises(GameAlreadyStartedError):
         game.add_player(99)

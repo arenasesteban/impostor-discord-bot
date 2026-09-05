@@ -4,14 +4,12 @@ import pytest
 import pytest_asyncio
 from dotenv import load_dotenv
 
+import impostor_bot.infrastructure.database.models  # noqa: F401
 from impostor_bot.infrastructure.database.base import Base
 from impostor_bot.infrastructure.database.session import (
     create_database_engine,
     create_session_factory,
 )
-
-import impostor_bot.infrastructure.database.models  # noqa: F401
-
 
 load_dotenv()
 

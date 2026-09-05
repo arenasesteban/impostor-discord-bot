@@ -30,7 +30,6 @@ from impostor_bot.infrastructure.repositories.postgres_game_repository import (
     PostgresGameRepository,
 )
 
-
 pytestmark = pytest.mark.integration
 
 

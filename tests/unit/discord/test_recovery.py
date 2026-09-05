@@ -1,18 +1,18 @@
-import pytest
 import asyncio
 import logging
+
+import pytest
+from tests.helpers.factories import (
+    make_session_key,
+    make_started_game,
+)
+
 from impostor_bot.discord.recovery import RecoverGameSessions
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
+from impostor_bot.game.state import GameState
 from impostor_bot.infrastructure.repositories.in_memory_game_repository import (
     InMemoryGameRepository,
-)
-from impostor_bot.game.state import GameState
-
-from tests.helpers.factories import (
-    make_session_key,
-    make_ready_game,
-    make_started_game,
 )
 
 

@@ -14,3 +14,5 @@ dependencies:
     - sqlalchemy>=2.0,<2.1
     - asyncpg
     - alembic   
+    - ruff
+    - mypy

@@ -1,19 +1,11 @@
-import discord
 import logging
+from collections.abc import Awaitable, Callable
 
-from collections.abc import (
-    Awaitable,
-    Callable
-)
+import discord
 
-from impostor_bot.discord.commands import impostor_group
 from impostor_bot.discord.command_tree import ImpostorCommandTree
-
-from impostor_bot.observability import (
-    log_error,
-    log_event
-)
-
+from impostor_bot.discord.commands import impostor_group
+from impostor_bot.observability import log_error, log_event
 
 logger = logging.getLogger(__name__)
 

@@ -1,32 +1,26 @@
 import asyncio
 
 import pytest
+from tests.helpers.factories import (
+    make_ready_game,
+    make_session_key,
+    make_started_game,
+)
+from tests.helpers.fakes import FakeGameRepository
 
 from impostor_bot.application.exceptions import (
     GameNotFoundError,
     NotGameHostError,
 )
-
 from impostor_bot.application.start_game import StartGame
-
 from impostor_bot.constants import IMPOSTOR_ROLE
-
 from impostor_bot.game.exceptions import (
     GameAlreadyStartedError,
-    NotEnoughPlayersError,
     GameError,
+    NotEnoughPlayersError,
 )
-
 from impostor_bot.game.game import Game
 from impostor_bot.game.state import GameState
-
-from tests.helpers.fakes import FakeGameRepository
-
-from tests.helpers.factories import (
-    make_session_key,
-    make_ready_game,
-    make_started_game,
-)
 
 
 class FakeWordProvider:

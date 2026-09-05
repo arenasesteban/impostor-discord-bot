@@ -1,24 +1,21 @@
 import asyncio
 
 import pytest
+from tests.helpers.factories import (
+    make_session_key,
+    make_started_game,
+)
+from tests.helpers.fakes import FakeGameRepository
 
 from impostor_bot.application.cancel_game import CancelGame
 from impostor_bot.application.exceptions import (
     GameNotFoundError,
     NotGameHostError,
 )
-from impostor_bot.game.exceptions import InvalidGameStateError
 from impostor_bot.application.finish_game import FinishGame
-
+from impostor_bot.game.exceptions import InvalidGameStateError
 from impostor_bot.game.game import Game
 from impostor_bot.game.state import GameState
-
-from tests.helpers.fakes import FakeGameRepository
-from tests.helpers.factories import (
-    make_session_key,
-    make_started_game,
-)
-
 
 key = make_session_key()
 

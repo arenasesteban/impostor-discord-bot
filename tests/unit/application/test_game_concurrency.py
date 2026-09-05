@@ -1,6 +1,11 @@
 import asyncio
 from copy import deepcopy
 
+from tests.helpers.factories import (
+    make_session_key,
+    make_started_game,
+)
+
 from impostor_bot.application.cancel_game import CancelGame
 from impostor_bot.application.create_game import CreateGame
 from impostor_bot.application.exceptions import (
@@ -9,18 +14,12 @@ from impostor_bot.application.exceptions import (
 )
 from impostor_bot.application.finish_game import FinishGame
 from impostor_bot.application.join_game import JoinGame
-
 from impostor_bot.game.exceptions import (
     PlayerAlreadyJoinedError,
 )
 from impostor_bot.game.game import Game
 from impostor_bot.game.player import Player
 from impostor_bot.game.session_key import GameSessionKey
-
-from tests.helpers.factories import (
-    make_session_key,
-    make_started_game,
-)
 
 
 class YieldingGameRepository:

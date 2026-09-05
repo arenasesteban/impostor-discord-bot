@@ -1,7 +1,5 @@
 import discord
 
-from impostor_bot.game.session import Session
-
 from impostor_bot.constants import (
     EMOJI_DICE,
     EMOJI_DOOR,
@@ -12,6 +10,7 @@ from impostor_bot.constants import (
     EMOJI_SUCCESS,
     EMOJI_WARNING,
 )
+from impostor_bot.game.session import Session
 
 
 def format_player_list(player_ids: list[int]) -> str:

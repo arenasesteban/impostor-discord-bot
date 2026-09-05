@@ -1,13 +1,13 @@
-import discord
-import pytest
 import asyncio
-
 from types import SimpleNamespace
 from unittest.mock import (
     AsyncMock,
     MagicMock,
     patch,
 )
+
+import discord
+import pytest
 
 from impostor_bot.discord.lobby import (
     close_lobby_message,
@@ -53,10 +53,14 @@ def make_client():
     )
 
 
-def make_channel():
-    return SimpleNamespace(
-        fetch_message=AsyncMock(),
+def make_channel() -> MagicMock:
+    channel = MagicMock(
+        spec=discord.TextChannel
     )
+
+    channel.fetch_message = AsyncMock()
+
+    return channel
 
 
 @pytest.fixture(autouse=True)
