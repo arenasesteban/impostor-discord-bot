@@ -17,3 +17,32 @@ select = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["impostor_bot"]
+
+[tool.mypy]
+python_version = "3.12"
+
+files = [
+    "src/impostor_bot",
+]
+
+pretty = true
+show_error_codes = true
+show_error_context = true
+
+warn_unused_configs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+
+strict_equality = true
+check_untyped_defs = true
+
+implicit_optional = false
+
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_any_generics = true
+
+no_implicit_reexport = true
+
+extra_checks = true

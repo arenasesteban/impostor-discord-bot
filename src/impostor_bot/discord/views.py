@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 import discord
 
@@ -50,7 +51,12 @@ class LobbyView(discord.ui.View):
             if isinstance(item, discord.ui.Button):
                 item.disabled = True
 
-    async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item) -> None:
+    async def on_error(
+        self,
+        interaction: discord.Interaction,
+        error: Exception,
+        item: discord.ui.Item[Any],
+    ) -> None:
         await handle_unexpected_error(interaction, error)
 
     @discord.ui.button(
@@ -59,7 +65,7 @@ class LobbyView(discord.ui.View):
         row=0,
         custom_id="impostor:lobby:join:v1"
     )
-    async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+    async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button["LobbyView"]) -> None:
         await handle_join_button(
             interaction=interaction,
             view=self,
@@ -72,7 +78,7 @@ class LobbyView(discord.ui.View):
         row=0,
         custom_id="impostor:lobby:leave:v1"
     )
-    async def leave_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+    async def leave_button(self, interaction: discord.Interaction, button: discord.ui.Button["LobbyView"]) -> None:
         await handle_leave_button(
             interaction=interaction,
             view=self,

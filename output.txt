@@ -1,0 +1,273 @@
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> git grep -n "type: ignore" src
+>> git grep -n "cast(" src
+>> git grep -n "Any" src
+src/impostor_bot/observability/logging.py:4:from typing import Any
+src/impostor_bot/observability/logging.py:16:        payload: dict[str, Any] = {
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> mypy src/ --no-incremental    
+src\impostor_bot\discord\error_handling.py: note: In function "_log_known_error":
+src\impostor_bot\discord\error_handling.py:238: error: Function
+is missing a type annotation for one or more parameters 
+[no-untyped-def]
+    def _log_known_error(interaction, error: Exception) -> ...
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src\impostor_bot\discord\views.py: note: In member "on_error" of class "LobbyView":
+src\impostor_bot\discord\views.py:53: error: Missing type
+arguments for generic type "Item"  [type-arg]
+    ...eraction, error: Exception, item: discord.ui.Item) -> N...
+                                         ^
+src\impostor_bot\discord\views.py: note: In member "join_button" of class "LobbyView":
+src\impostor_bot\discord\views.py:62: error: Missing type
+arguments for generic type "Button"  [type-arg]
+    ...ion: discord.Interaction, button: discord.ui.Button) ->...
+                                         ^
+src\impostor_bot\discord\views.py: note: In member "leave_button" of class "LobbyView":
+src\impostor_bot\discord\views.py:75: error: Missing type
+arguments for generic type "Button"  [type-arg]
+    ...ion: discord.Interaction, button: discord.ui.Button) ->...
+                                         ^
+src\impostor_bot\discord\commands.py: note: In function "create":
+src\impostor_bot\discord\commands.py:433: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def create(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "join":
+src\impostor_bot\discord\commands.py:445: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def join(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "leave":
+src\impostor_bot\discord\commands.py:456: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def leave(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "start":
+src\impostor_bot\discord\commands.py:467: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def start(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "finish":
+src\impostor_bot\discord\commands.py:479: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def finish(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "cancel":
+src\impostor_bot\discord\commands.py:490: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def cancel(
+    ^~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "status":
+src\impostor_bot\discord\commands.py:503: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def status(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "help_command":
+src\impostor_bot\discord\commands.py:514: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def help_command(interaction: discord.Interaction...
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Found 12 errors in 3 files (checked 67 source files)
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> 
+
+
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> git grep -n "type: ignore" src
+>> git grep -n "cast(" src
+>> git grep -n "Any" src
+src/impostor_bot/observability/logging.py:4:from typing import Any
+src/impostor_bot/observability/logging.py:16:        payload: dict[str, Any] = {
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> 
+
+
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> git grep -n "assert .*is not None" src/impostor_bot/application
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> 
+
+
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> git grep -n "sqlalchemy.ext.mypy" .
+>> git grep -n "sqlalchemy-stubs" .
+>> git grep -n "sqlalchemy2-stubs" .
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> 
+
+
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> mypy src/ --no-incremental
+src\impostor_bot\discord\error_handling.py: note: In function "_log_known_error":
+src\impostor_bot\discord\error_handling.py:238: error: Function
+is missing a type annotation for one or more parameters 
+[no-untyped-def]
+    def _log_known_error(interaction, error: Exception) -> ...
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src\impostor_bot\discord\views.py: note: In member "on_error" ofclass "LobbyView":
+src\impostor_bot\discord\views.py:53: error: Missing type
+arguments for generic type "Item"  [type-arg]
+    ...eraction, error: Exception, item: discord.ui.Item) -> N...
+                                         ^
+src\impostor_bot\discord\views.py: note: In member "join_button"of class "LobbyView":
+src\impostor_bot\discord\views.py:62: error: Missing type
+arguments for generic type "Button"  [type-arg]
+    ...ion: discord.Interaction, button: discord.ui.Button) ->...
+                                         ^
+src\impostor_bot\discord\views.py: note: In member "leave_button" of class "LobbyView":
+src\impostor_bot\discord\views.py:75: error: Missing type
+arguments for generic type "Button"  [type-arg]
+    ...ion: discord.Interaction, button: discord.ui.Button) ->...
+                                         ^
+src\impostor_bot\discord\commands.py: note: In function "create":
+src\impostor_bot\discord\commands.py:433: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def create(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "join":
+src\impostor_bot\discord\commands.py:445: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def join(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "leave":
+src\impostor_bot\discord\commands.py:456: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def leave(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "start":
+src\impostor_bot\discord\commands.py:467: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def start(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "finish":
+src\impostor_bot\discord\commands.py:479: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def finish(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "cancel":
+src\impostor_bot\discord\commands.py:490: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def cancel(
+    ^~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "status":
+src\impostor_bot\discord\commands.py:503: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def status(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "help_command":
+src\impostor_bot\discord\commands.py:514: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def help_command(interaction: discord.Interaction...
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Found 12 errors in 3 files (checked 67 source files)
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> 
+
+
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> mypy src/ --extra-checks --no-incremental
+src\impostor_bot\discord\error_handling.py: note: In function "_log_known_error":
+src\impostor_bot\discord\error_handling.py:238: error: Function
+is missing a type annotation for one or more parameters 
+[no-untyped-def]
+    def _log_known_error(interaction, error: Exception) -> ...
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+src\impostor_bot\discord\views.py: note: In member "on_error" ofclass "LobbyView":
+src\impostor_bot\discord\views.py:53: error: Missing type
+arguments for generic type "Item"  [type-arg]
+    ...eraction, error: Exception, item: discord.ui.Item) -> N...
+                                         ^
+src\impostor_bot\discord\views.py: note: In member "join_button"of class "LobbyView":
+src\impostor_bot\discord\views.py:62: error: Missing type
+arguments for generic type "Button"  [type-arg]
+    ...ion: discord.Interaction, button: discord.ui.Button) ->...
+                                         ^
+src\impostor_bot\discord\views.py: note: In member "leave_button" of class "LobbyView":
+src\impostor_bot\discord\views.py:75: error: Missing type
+arguments for generic type "Button"  [type-arg]
+    ...ion: discord.Interaction, button: discord.ui.Button) ->...
+                                         ^
+src\impostor_bot\discord\commands.py: note: In function "create":
+src\impostor_bot\discord\commands.py:433: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def create(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "join":
+src\impostor_bot\discord\commands.py:445: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def join(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "leave":
+src\impostor_bot\discord\commands.py:456: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def leave(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "start":
+src\impostor_bot\discord\commands.py:467: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def start(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "finish":
+src\impostor_bot\discord\commands.py:479: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def finish(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "cancel":
+src\impostor_bot\discord\commands.py:490: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def cancel(
+    ^~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "status":
+src\impostor_bot\discord\commands.py:503: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def status(interaction: discord.Interaction):
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src\impostor_bot\discord\commands.py: note: In function "help_command":
+src\impostor_bot\discord\commands.py:514: error: Function is
+missing a return type annotation  [no-untyped-def]
+    async def help_command(interaction: discord.Interaction...
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Found 12 errors in 3 files (checked 67 source files)
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> 
+
+
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> ruff check .
+I001 [*] Import block is un-sorted or un-formatted
+ --> src\impostor_bot\config.py:1:1
+  |
+1 | / import os
+2 | |
+3 | | from dotenv import load_dotenv
+  | |______________________________^
+help: Organize imports
+  |
+4 |
+  -
+5 | load_dotenv()
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> src\impostor_bot\discord\logging_context.py:1:1
+  |
+1 | / import discord
+2 | |
+3 | | from typing import TypedDict
+  | |____________________________^
+help: Organize imports
+  |
+1 + from typing import TypedDict
+2 +
+3 | import discord
+  -
+  - from typing import TypedDict
+4 |
+  |
+
+F401 [*] `impostor_bot.game.game.Game` imported but unused
+ --> src\impostor_bot\ports\lobby_message_repository.py:3:36
+  |
+1 | from typing import Protocol
+2 |
+3 | from impostor_bot.game.game import Game
+  |                                    ^^^^
+4 | from impostor_bot.game.session_key import (
+5 |     GameSessionKey,
+  |
+help: Remove unused import: `impostor_bot.game.game.Game`
+  |
+2 |
+  - from impostor_bot.game.game import Game
+3 | from impostor_bot.game.session_key import (
+  |
+
+Found 3 errors.
+[*] 3 fixable with the `--fix` option.
+(impostor-discord-bot-env) PS D:\Esteban Proyectos\impostor-discord-bot> 

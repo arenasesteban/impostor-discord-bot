@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from impostor_bot.config import DISCORD_TOKEN
+from impostor_bot.config import discord_token
 from impostor_bot.discord.client import create_bot
 from impostor_bot.discord.recovery import RecoverGameSessions
 from impostor_bot.discord.recovery_gateway import DiscordPySessionRecoveryGateway
@@ -20,7 +20,7 @@ async def run() -> None:
 
     configure_logging(
         level=logging.INFO,
-        sensitive_values=(DISCORD_TOKEN, database_url)
+        sensitive_values=(discord_token, database_url)
     )
 
     postgres_runtime = create_postgres_runtime(database_url)
@@ -45,7 +45,7 @@ async def run() -> None:
         bot.add_startup_hook(recover_sessions)
 
         async with bot:
-            await bot.start(DISCORD_TOKEN)
+            await bot.start(discord_token)
 
     finally:
         await postgres_runtime.close()

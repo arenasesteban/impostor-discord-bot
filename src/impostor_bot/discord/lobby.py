@@ -15,7 +15,6 @@ async def fetch_lobby_message(client: discord.Client, key: GameSessionKey) -> di
 
     channel = client.get_channel(key.channel_id)
 
-
     if channel is None:
         try:
             channel = await client.fetch_channel(key.channel_id)
@@ -29,7 +28,7 @@ async def fetch_lobby_message(client: discord.Client, key: GameSessionKey) -> di
                 "Discord lobby channel could not be accessed."
             ) from error
 
-    if not hasattr(channel, "fetch_message"):
+    if not isinstance(channel, (discord.TextChannel, discord.Thread, discord.VoiceChannel, discord.StageChannel)):
         active_lobby_messages.pop(key, None)
         return None
 

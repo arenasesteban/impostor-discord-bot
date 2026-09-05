@@ -430,7 +430,7 @@ impostor_group = app_commands.Group(
     name="create",
     description="Create a new Impostor game in the current channel."
 )
-async def create(interaction: discord.Interaction):
+async def create(interaction: discord.Interaction) -> None:
     await handle_create(
         interaction=interaction,
         use_case=create_game_use_case,
@@ -442,7 +442,7 @@ async def create(interaction: discord.Interaction):
     name="join",
     description="Join an active Impostor game in the current channel."
 )
-async def join(interaction: discord.Interaction):
+async def join(interaction: discord.Interaction) -> None:
     await handle_join(
         interaction=interaction,
         use_case=join_game_use_case
@@ -453,7 +453,7 @@ async def join(interaction: discord.Interaction):
     name="leave",
     description="Leave an active Impostor game in the current channel."
 )
-async def leave(interaction: discord.Interaction):
+async def leave(interaction: discord.Interaction) -> None:
     await handle_leave(
         interaction=interaction,
         use_case=leave_game_use_case
@@ -464,7 +464,7 @@ async def leave(interaction: discord.Interaction):
     name="start",
     description="Starts the game and sends secret roles by direct message.",
 )
-async def start(interaction: discord.Interaction):
+async def start(interaction: discord.Interaction) -> None:
     await handle_start(
         interaction=interaction,
         use_case=start_game_use_case,
@@ -476,7 +476,7 @@ async def start(interaction: discord.Interaction):
     name="finish",
     description="Finishes the active Impostor game.",
 )
-async def finish(interaction: discord.Interaction):
+async def finish(interaction: discord.Interaction) -> None:
     await handle_finish(
         interaction=interaction,
         use_case=finish_game_use_case
@@ -487,9 +487,7 @@ async def finish(interaction: discord.Interaction):
     name="cancel",
     description="Cancels the active Impostor game.",
 )
-async def cancel(
-    interaction: discord.Interaction,
-):
+async def cancel(interaction: discord.Interaction) -> None:
     await handle_cancel(
         interaction=interaction,
         use_case=cancel_game_use_case,
@@ -500,7 +498,7 @@ async def cancel(
     name="status",
     description="Shows the current game status.",
 )
-async def status(interaction: discord.Interaction):
+async def status(interaction: discord.Interaction) -> None:
     await handle_status(
         interaction=interaction,
         use_case=get_game_status_use_case,
@@ -511,7 +509,7 @@ async def status(interaction: discord.Interaction):
     name="help",
     description="Shows help about how to use the bot.",
 )
-async def help_command(interaction: discord.Interaction):
+async def help_command(interaction: discord.Interaction) -> None:
     await interaction.response.send_message(
         build_help_message(),
         ephemeral=True

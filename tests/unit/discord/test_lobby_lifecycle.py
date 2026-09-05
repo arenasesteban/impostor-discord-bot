@@ -53,10 +53,14 @@ def make_client():
     )
 
 
-def make_channel():
-    return SimpleNamespace(
-        fetch_message=AsyncMock(),
+def make_channel() -> MagicMock:
+    channel = MagicMock(
+        spec=discord.TextChannel
     )
+
+    channel.fetch_message = AsyncMock()
+
+    return channel
 
 
 @pytest.fixture(autouse=True)

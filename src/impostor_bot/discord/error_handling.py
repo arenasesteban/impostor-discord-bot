@@ -235,7 +235,8 @@ def _get_game_rule_error_message(error: GameRuleError, *, operation: ErrorOperat
     )
 
 
-def _log_known_error(interaction, error: Exception) -> None:
+def _log_known_error(interaction: discord.Interaction,
+    error: Exception,) -> None:
     context = interaction_log_context(interaction)
 
     if isinstance(error, DatabaseError):
