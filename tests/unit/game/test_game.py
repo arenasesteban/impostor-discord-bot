@@ -20,11 +20,22 @@ from impostor_bot.constants import (
     MIN_PLAYERS,
 )
 
+from tests.helpers.factories import (
+    make_started_game,
+    make_ready_game
+)
 
-def create_ready_game() -> Session:
-    game = Session(host_id=1)
+
+def make_finished_game() -> Game:
+    game = make_started_game()
+    game.finish()
+    return game
+
+
+def make_cancelled_game() -> Game:
+    game = Game.create(host_id=1)
     game.add_player(2)
-    game.add_player(3)
+    game.cancel()
     return game
 
 
@@ -95,7 +106,7 @@ def test_can_start_returns_false_with_less_than_minimum_players():
 
 
 def test_can_start_returns_true_with_minimum_players():
-    game = create_ready_game()
+    game = make_ready_game()
 
     assert len(game.players) == MIN_PLAYERS
     assert game.can_start() is True
@@ -113,7 +124,7 @@ def test_game_cannot_start_with_less_than_minimum_players():
 
 
 def test_game_can_start_with_minimum_players():
-    game = create_ready_game()
+    game = make_ready_game()
 
     roles = game.start_game(
         secret_word="pizza",
@@ -127,13 +138,12 @@ def test_game_can_start_with_minimum_players():
 
 
 def test_only_one_impostor_is_generated():
-    game = create_ready_game()
+    game = make_ready_game()
 
     roles = game.start_game(
         secret_word="pizza",
         impostor_id=2,
     )
-
     impostors = [
         player_id
         for player_id, role in roles.items()
@@ -144,7 +154,7 @@ def test_only_one_impostor_is_generated():
 
 
 def test_impostor_does_not_receive_secret_word():
-    game = create_ready_game()
+    game = make_ready_game()
 
     roles = game.start_game(
         secret_word="pizza",
@@ -155,7 +165,7 @@ def test_impostor_does_not_receive_secret_word():
 
 
 def test_normal_players_receive_secret_word():
-    game = create_ready_game()
+    game = make_ready_game()
 
     roles = game.start_game(
         secret_word="pizza",
@@ -168,7 +178,7 @@ def test_normal_players_receive_secret_word():
 
 
 def test_generate_roles_returns_one_role_per_player():
-    game = create_ready_game()
+    game = make_ready_game()
 
     roles = game.start_game(
         secret_word="pizza",
@@ -179,7 +189,7 @@ def test_generate_roles_returns_one_role_per_player():
 
 
 def test_cannot_add_player_after_game_started():
-    game = create_ready_game()
+    game = make_ready_game()
     game.start_game(
         secret_word="pizza",
         impostor_id=2,
@@ -190,7 +200,8 @@ def test_cannot_add_player_after_game_started():
 
 
 def test_cannot_remove_player_after_game_started():
-    game = create_ready_game()
+    game = make_ready_game()
+
     game.start_game(
         secret_word="pizza",
         impostor_id=2,
@@ -200,34 +211,8 @@ def test_cannot_remove_player_after_game_started():
         game.remove_player(2)
 
 
-def test_cancel_open_game():
-    game = Session(host_id=1)
-
-    game.cancel()
-
-    assert game.status == STATUS_CANCELLED
-
-
-def test_can_cancel_started_game():
-    game = create_ready_game()
-
-    game.start_game(
-        secret_word="pizza",
-        impostor_id=2,
-    )
-
-    game.cancel()
-
-    assert game.status == GameState.CANCELLED
-
-
 def test_start_rejects_invalid_impostor():
-    game = Game.create(
-        host_id=1
-    )
-
-    game.add_player(2)
-    game.add_player(3)
+    game = make_ready_game()
 
     with pytest.raises(
         GameInvariantError
@@ -262,3 +247,83 @@ def test_generate_roles_requires_impostor():
         GameInvariantError
     ):
         game.generate_roles()
+
+
+def test_started_game_cannot_be_started_again():
+    game = make_started_game()
+
+    with pytest.raises(GameAlreadyStartedError):
+        game.start_game(
+            secret_word="burger",
+            impostor_id=3,
+        )
+
+    assert game.status == GameState.STARTED
+    assert game.secret_word == "pizza"
+    assert game.impostor_id == 2
+
+
+@pytest.mark.parametrize(
+    "game_factory",
+    [
+        make_started_game,
+        make_finished_game,
+        make_cancelled_game,
+    ],
+)
+def test_non_waiting_game_cannot_add_players(game_factory):
+    game = game_factory()
+
+    original_players = game.players.copy()
+
+    with pytest.raises(GameAlreadyStartedError):
+        game.add_player(99)
+
+    assert game.players == original_players
+
+
+@pytest.mark.parametrize(
+    "game_factory",
+    [
+        make_started_game,
+        make_finished_game,
+        make_cancelled_game,
+    ],
+)
+def test_non_waiting_game_cannot_remove_players(game_factory):
+    game = game_factory()
+
+    original_players = game.players.copy()
+
+    with pytest.raises(GameAlreadyStartedError):
+        game.remove_player(2)
+
+    assert game.players == original_players
+
+
+@pytest.mark.parametrize(
+    "game",
+    [
+        make_started_game(),
+        make_finished_game(),
+        make_cancelled_game(),
+    ],
+)
+def test_players_cannot_join_non_waiting_game(game):
+    with pytest.raises(GameAlreadyStartedError):
+        game.add_player(99)
+
+
+@pytest.mark.parametrize(
+    "game_factory",
+    [
+        make_started_game,
+        make_finished_game,
+        make_cancelled_game,
+    ],
+)
+def test_players_cannot_join_non_waiting_game(game_factory):
+    game = game_factory()
+
+    with pytest.raises(GameAlreadyStartedError):
+        game.add_player(99)

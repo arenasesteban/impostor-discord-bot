@@ -11,35 +11,19 @@ from impostor_bot.game.exceptions import NotEnoughPlayersError
 from impostor_bot.game.game import Game
 from impostor_bot.game.session_key import GameSessionKey
 
-
-def create_ready_game() -> Game:
-    game = Game.create(host_id=1)
-    game.add_player(2)
-    game.add_player(3)
-
-    return game
-
-
-def create_started_game() -> Game:
-    game = create_ready_game()
-
-    game.start_game(
-        secret_word="pizza",
-        impostor_id=2,
-    )
-
-    return game
-
+from tests.helpers.factories import (
+    make_ready_game,
+    make_started_game,
+)
 
 def create_cancelled_game() -> Game:
-    game = create_started_game()
+    game = make_started_game()
     game.cancel()
 
     return game
 
-
 def create_start_result() -> StartGameResult:
-    game = create_started_game()
+    game = make_started_game()
 
     return StartGameResult(
         game=game,
@@ -49,7 +33,6 @@ def create_start_result() -> StartGameResult:
             3: "pizza",
         },
     )
-
 
 def create_interaction(
     user_id: int = 1,
@@ -77,6 +60,7 @@ def create_interaction(
             send=AsyncMock(),
         ),
     )
+
 
 def test_start_handler_keeps_started_game_active():
     result = create_start_result()

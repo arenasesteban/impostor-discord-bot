@@ -9,21 +9,15 @@ from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.infrastructure.repositories.in_memory_game_repository import (
     InMemoryGameRepository,
 )
-from impostor_bot.infrastructure.concurrency.asyncio_session_lock_manager import (
-    AsyncioSessionLockManager,
-)
-
-def create_lock_manager() -> AsyncioSessionLockManager:
-    return AsyncioSessionLockManager()
 
 
-def test_create_game_persists_new_game():
+def test_create_game_persists_new_game(lock_manager):
     games: dict[GameSessionKey, Game] = {}
 
     repository = InMemoryGameRepository(games)
     create_game = CreateGame(
         repository=repository,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     key = GameSessionKey(
@@ -46,13 +40,13 @@ def test_create_game_persists_new_game():
     assert stored_game is game
 
 
-def test_create_game_uses_full_session_key_storage():
+def test_create_game_uses_full_session_key_storage(lock_manager):
     games: dict[GameSessionKey, Game] = {}
 
     repository = InMemoryGameRepository(games)
     create_game = CreateGame(
         repository=repository,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     key = GameSessionKey(
@@ -70,13 +64,13 @@ def test_create_game_uses_full_session_key_storage():
     assert games[key] is game
 
 
-def test_create_game_rejects_existing_game():
+def test_create_game_rejects_existing_game(lock_manager):
     games: dict[GameSessionKey, Game] = {}
 
     repository = InMemoryGameRepository(games)
     create_game = CreateGame(
         repository=repository,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     key = GameSessionKey(
@@ -100,13 +94,13 @@ def test_create_game_rejects_existing_game():
         )
 
 
-def test_different_channels_can_create_independent_games():
+def test_different_channels_can_create_independent_games(lock_manager):
     games: dict[GameSessionKey, Game] = {}
 
     repository = InMemoryGameRepository(games)
     create_game = CreateGame(
         repository=repository,
-        lock_manager=create_lock_manager(),
+        lock_manager=lock_manager,
     )
 
     first_key = GameSessionKey(
