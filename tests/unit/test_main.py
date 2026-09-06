@@ -152,10 +152,9 @@ async def test_run_injects_settings_into_runtime(
     )
 
     create_postgres_runtime_mock.assert_called_once_with(
-        (
             "postgresql+asyncpg://"
             "user:password@postgres:5432/test_db"
-        )
+        
     )
 
     bot.start.assert_awaited_once_with(
