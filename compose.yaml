@@ -44,6 +44,8 @@ services:
             DISCORD_TOKEN: ${DISCORD_TOKEN:?DISCORD_TOKEN must be set}
             DATABASE_URL: >-
                 postgresql+asyncpg://impostor_bot:impostor_local@postgres:5432/impostor_bot
+            LOG_LEVEL: ${LOG_LEVEL:-INFO}
+            ENVIRONMENT: ${ENVIRONMENT:-development}
         depends_on:
             postgres:
                 condition: service_healthy

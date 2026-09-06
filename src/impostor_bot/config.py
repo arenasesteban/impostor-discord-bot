@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 
 
@@ -25,12 +25,12 @@ class LogLevel(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class DatabaseSettings:
-    database_url: str
+    database_url: str = field(repr=False)
 
 
 @dataclass(frozen=True, slots=True)
 class AppSettings:
-    discord_token: str
+    discord_token: str = field(repr=False)
     database: DatabaseSettings
     log_level: LogLevel
     environment: Environment

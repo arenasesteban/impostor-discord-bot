@@ -4,7 +4,7 @@ import os
 
 from dotenv import load_dotenv
 
-from impostor_bot.config import load_app_settings
+from impostor_bot.config import AppSettings, load_app_settings
 from impostor_bot.discord.client import create_bot
 from impostor_bot.discord.recovery import RecoverGameSessions
 from impostor_bot.discord.recovery_gateway import DiscordPySessionRecoveryGateway
@@ -16,14 +16,12 @@ from impostor_bot.discord.state import (
 from impostor_bot.infrastructure.database.runtime import create_postgres_runtime
 from impostor_bot.observability import configure_logging
 
+logger = logging.getLogger(__name__)
 
-async def run() -> None:
-    load_dotenv()
 
-    settings = load_app_settings(os.environ)
-
+async def run(settings: AppSettings) -> None:
     configure_logging(
-        level=logging.INFO,
+        level=settings.log_level.value,
         sensitive_values=(
             settings.discord_token, 
             settings.database.database_url
@@ -59,9 +57,13 @@ async def run() -> None:
 
 
 def main() -> None:
+    load_dotenv(override=False)
+
+    settings = load_app_settings(os.environ)
+
     try:
         asyncio.run(
-            run()
+            run(settings)
         )
         
     except KeyboardInterrupt:
