@@ -1,16 +1,16 @@
 import asyncio
+import os
 from logging.config import fileConfig
 
 from alembic import context
+from dotenv import load_dotenv
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
 import impostor_bot.infrastructure.database.models  # noqa: F401
+from impostor_bot.config import load_database_settings
 from impostor_bot.infrastructure.database.base import Base
-from impostor_bot.infrastructure.database.settings import (
-    get_database_url,
-)
 
 config = context.config
 
@@ -23,8 +23,12 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
+    load_dotenv(override=False)
+
+    database_settings = load_database_settings(environ=os.environ)
+
     context.configure(
-        url=get_database_url(),
+        url=database_settings.database_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={
@@ -51,8 +55,12 @@ def do_run_migrations(
 
 
 async def run_async_migrations() -> None:
+    load_dotenv(override=False)
+
+    database_settings = load_database_settings(environ=os.environ)
+
     connectable = create_async_engine(
-        get_database_url(),
+        database_settings.database_url,
         poolclass=pool.NullPool,
     )
 

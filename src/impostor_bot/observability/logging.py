@@ -72,7 +72,11 @@ class JsonFormatter(logging.Formatter):
         )
 
 
-def configure_logging(*, level: int = logging.INFO, sensitive_values: tuple[str, ...] = ()) -> None:
+def configure_logging(
+    *,
+    level: int | str = logging.INFO,
+    sensitive_values: tuple[str, ...] = (),
+) -> None:
     root_logger = logging.getLogger()
 
     for handler in tuple(root_logger.handlers):

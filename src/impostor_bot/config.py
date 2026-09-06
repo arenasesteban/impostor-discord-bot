@@ -1,21 +1,134 @@
-import os
+from __future__ import annotations
 
-from dotenv import load_dotenv
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from enum import StrEnum
 
-load_dotenv()
+
+class ConfigurationError(RuntimeError):
+    """Raised when application configuration is invalid."""
 
 
-def _get_discord_token() -> str:
-    discord_token = os.getenv("DISCORD_TOKEN")
+class Environment(StrEnum):
+    DEVELOPMENT = "development"
+    TEST = "test"
+    PRODUCTION = "production"
 
-    if not discord_token:
-        raise RuntimeError(
-            "DISCORD_TOKEN is not set in the environment variables. "
-            "Please make sure to set it in your .env file or "
-            "in your system environment variables."
+
+class LogLevel(StrEnum):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+
+@dataclass(frozen=True, slots=True)
+class DatabaseSettings:
+    database_url: str = field(repr=False)
+
+
+@dataclass(frozen=True, slots=True)
+class AppSettings:
+    discord_token: str = field(repr=False)
+    database: DatabaseSettings
+    log_level: LogLevel
+    environment: Environment
+
+
+def load_database_settings(
+    environ: Mapping[str, str],
+) -> DatabaseSettings:
+    database_url = _required(
+        environ,
+        "DATABASE_URL",
+    )
+
+    if not database_url.startswith(
+        "postgresql+asyncpg://"
+    ):
+        raise ConfigurationError(
+            "DATABASE_URL must use postgresql+asyncpg."
         )
 
-    return discord_token
+    return DatabaseSettings(
+        database_url=database_url,
+    )
 
 
-discord_token = _get_discord_token()
+def load_app_settings(
+    environ: Mapping[str, str],
+) -> AppSettings:
+    discord_token = _required(
+        environ,
+        "DISCORD_TOKEN",
+    )
+
+    database = load_database_settings(
+        environ,
+    )
+
+    log_level = _load_log_level(
+        environ.get("LOG_LEVEL"),
+    )
+
+    environment = _load_environment(
+        environ.get("ENVIRONMENT"),
+    )
+
+    return AppSettings(
+        discord_token=discord_token,
+        database=database,
+        log_level=log_level,
+        environment=environment,
+    )
+
+
+def _required(
+    environ: Mapping[str, str],
+    name: str,
+) -> str:
+    value = environ.get(name)
+
+    if value is None or not value.strip():
+        raise ConfigurationError(
+            f"{name} must be configured."
+        )
+
+    return value
+
+
+def _load_log_level(
+    value: str | None,
+) -> LogLevel:
+    normalized = (
+        value
+        if value is not None
+        else LogLevel.INFO.value
+    ).strip().upper()
+
+    try:
+        return LogLevel(normalized)
+    except ValueError as error:
+        raise ConfigurationError(
+            "LOG_LEVEL must be one of: "
+            "DEBUG, INFO, WARNING, ERROR, CRITICAL."
+        ) from error
+
+
+def _load_environment(
+    value: str | None,
+) -> Environment:
+    normalized = (
+        value
+        if value is not None
+        else Environment.DEVELOPMENT.value
+    ).strip().lower()
+
+    try:
+        return Environment(normalized)
+    except ValueError as error:
+        raise ConfigurationError(
+            "ENVIRONMENT must be one of: "
+            "development, test, production."
+        ) from error
