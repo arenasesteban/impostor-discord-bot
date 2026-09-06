@@ -1,0 +1,54 @@
+services:
+    postgres:
+        image: postgres:18-bookworm
+        environment:
+            POSTGRES_DB: impostor_bot
+            POSTGRES_USER: impostor_bot
+            POSTGRES_PASSWORD: impostor_local
+        volumes:
+            - postgres_data:/var/lib/postgresql
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB",
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 5s
+
+    migrate:
+        build:
+            context: .
+        image: impostor-discord-bot:local
+        command:
+            [
+                "alembic",
+                "upgrade",
+                "head",
+            ]
+        environment:
+            DATABASE_URL: >-
+                postgresql+asyncpg://impostor_bot:impostor_local@postgres:5432/impostor_bot
+        depends_on:
+            postgres:
+                condition: service_healthy
+        restart: "no"
+
+    bot:
+        build:
+            context: .
+        image: impostor-discord-bot:local
+        environment:
+            DISCORD_TOKEN: ${DISCORD_TOKEN:?DISCORD_TOKEN must be set}
+            DATABASE_URL: >-
+                postgresql+asyncpg://impostor_bot:impostor_local@postgres:5432/impostor_bot
+        depends_on:
+            postgres:
+                condition: service_healthy
+            migrate:
+                condition: service_completed_successfully
+
+volumes:
+    postgres_data:
