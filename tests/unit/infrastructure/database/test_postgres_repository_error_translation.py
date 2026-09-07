@@ -73,6 +73,8 @@ async def test_repository_preserves_original_database_exception():
         SQLAlchemyError,
     )
 
+    assert False
+
 
 @pytest.mark.asyncio
 async def test_save_translates_sqlalchemy_error():
