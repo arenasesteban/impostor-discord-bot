@@ -108,7 +108,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@<MISMA_VERSION_ACTUAL>
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
