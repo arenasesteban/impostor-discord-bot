@@ -10,7 +10,7 @@ from impostor_bot.constants import (
     EMOJI_SUCCESS,
     EMOJI_WARNING,
 )
-from impostor_bot.game.session import Session
+from impostor_bot.game.game import Game
 
 
 def format_player_list(player_ids: list[int]) -> str:
@@ -23,7 +23,7 @@ def format_player_list(player_ids: list[int]) -> str:
     )
 
 
-def build_game_created_message(game: Session) -> str:
+def build_game_created_message(game: Game) -> str:
     return (
         f"{EMOJI_GAME} **Impostor game lobby**\n\n"
         f"**Status:** Open\n"
@@ -37,7 +37,7 @@ def build_game_created_message(game: Session) -> str:
     )
 
 
-def build_lobby_started_message(game: Session) -> str:
+def build_lobby_started_message(game: Game) -> str:
     return (
         f"{EMOJI_DICE} **The Impostor Game Has Started!**\n\n"
         f"**Status:** Started\n"
@@ -50,7 +50,7 @@ def build_lobby_started_message(game: Session) -> str:
         "`/impostor cancel` — Cancel the game."
     )
 
-def build_lobby_cancelled_message(game: Session) -> str:
+def build_lobby_cancelled_message(game: Game) -> str:
     return (
         f"{EMOJI_ERROR} **The Impostor Game Was Cancelled!**\n\n"
         f"**Status:** Cancelled\n"
@@ -77,7 +77,7 @@ def build_game_cancelled_message() -> str:
     return f"{EMOJI_ERROR} The game was cancelled by the host."
 
 
-def build_game_status_message(game: Session) -> str:
+def build_game_status_message(game: Game) -> str:
     player_list = format_player_list(game.players)
 
     return (
@@ -108,7 +108,7 @@ def build_dm_error_message(failed_players: list[int]) -> str:
     )
 
 
-def build_lobby_finished_message(game: Session) -> str:
+def build_lobby_finished_message(game: Game) -> str:
     return (
         f"{EMOJI_SUCCESS} **The Impostor Game Has Finished!**\n\n"
         f"**Status:** Finished\n"

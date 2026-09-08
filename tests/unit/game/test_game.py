@@ -15,7 +15,6 @@ from impostor_bot.game.exceptions import (
     PlayerNotFoundError,
 )
 from impostor_bot.game.game import Game
-from impostor_bot.game.session import Session
 from impostor_bot.game.state import GameState
 
 
@@ -33,7 +32,7 @@ def make_cancelled_game() -> Game:
 
 
 def test_game_session_registers_host_as_player():
-    game = Session(host_id=1)
+    game = Game.create(host_id=1)
 
     assert game.host_id == 1
     assert game.players == [1]
@@ -43,7 +42,7 @@ def test_game_session_registers_host_as_player():
 
 
 def test_add_player_to_open_game():
-    game = Session(host_id=1)
+    game = Game.create(host_id=1)
 
     game.add_player(2)
 
@@ -51,7 +50,7 @@ def test_add_player_to_open_game():
 
 
 def test_add_multiple_players_to_open_game():
-    game = Session(host_id=1)
+    game = Game.create(host_id=1)
 
     game.add_player(2)
     game.add_player(3)
@@ -60,7 +59,7 @@ def test_add_multiple_players_to_open_game():
 
 
 def test_cannot_add_duplicate_player():
-    game = Session(host_id=1)
+    game = Game.create(host_id=1)
     game.add_player(2)
 
     with pytest.raises(PlayerAlreadyJoinedError):
@@ -68,7 +67,7 @@ def test_cannot_add_duplicate_player():
 
 
 def test_remove_player_from_open_game():
-    game = Session(host_id=1)
+    game = Game.create(host_id=1)
     game.add_player(2)
 
     game.remove_player(2)
@@ -77,21 +76,21 @@ def test_remove_player_from_open_game():
 
 
 def test_cannot_remove_player_that_is_not_in_game():
-    game = Session(host_id=1)
+    game = Game.create(host_id=1)
 
     with pytest.raises(PlayerNotFoundError):
         game.remove_player(2)
 
 
 def test_host_cannot_leave_game():
-    game = Session(host_id=1)
+    game = Game.create(host_id=1)
 
     with pytest.raises(HostCannotLeaveError):
         game.remove_player(1)
 
 
 def test_can_start_returns_false_with_less_than_minimum_players():
-    game = Session(host_id=1)
+    game = Game.create(host_id=1)
     game.add_player(2)
 
     assert len(game.players) < MIN_PLAYERS
@@ -106,7 +105,7 @@ def test_can_start_returns_true_with_minimum_players():
 
 
 def test_game_cannot_start_with_less_than_minimum_players():
-    game = Session(host_id=1)
+    game = Game.create(host_id=1)
     game.add_player(2)
 
     with pytest.raises(NotEnoughPlayersError):
