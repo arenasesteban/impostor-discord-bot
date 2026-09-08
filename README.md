@@ -1,279 +1,543 @@
-# Impostor Discord Bot
+# Discord Impostor Bot
 
-A Discord bot built with `discord.py` to manage the setup phase of **The Impostor** game.
+A production-deployed Discord application that coordinates the setup and lifecycle of **Impostor** games.
 
-The bot acts as a neutral referee at the beginning of each match: it creates a lobby, registers players, selects a secret word, randomly chooses one impostor, and sends each player their role by direct message.
+The project started as a locally executed Discord bot and evolved into a modular backend service with PostgreSQL persistence, automated testing, Docker-based execution, Continuous Integration, and automatic production deployment.
 
-## Description
+The v2.0.0 architecture focuses on maintainability, explicit boundaries, recoverable state, and reproducible operation rather than adding unnecessary infrastructure.
 
-**Impostor Discord Bot** helps organize games of **The Impostor** inside a Discord server.
+---
 
-When a game starts, the bot sends the secret word by direct message to every regular player. One randomly selected player receives a message indicating that they are the impostor, without knowing the secret word.
+## Overview
 
-After sending the roles, the bot finishes its job. The rest of the game — clues, discussion, voting, and deciding the winner — is handled by the players.
+Discord Impostor Bot acts as a neutral coordinator for an Impostor game.
 
-## Main Features
+It manages the session lifecycle, player registration, role assignment, secret-word selection, and private role delivery while keeping the game state isolated between Discord servers and channels.
 
-* Create one game lobby per channel.
-* Automatically register the host as a player.
-* Public lobby with interactive buttons.
-* Join or leave a game using commands or buttons.
-* Ephemeral confirmations and error messages.
-* Lobby message updates when the player list changes.
-* Visual lobby closure when the game starts or is cancelled.
-* Random secret word selection.
-* Random impostor selection.
-* Role distribution through direct messages.
-* Configurable word list using a JSON file.
-* Basic automated tests for game logic and word loading.
+From an engineering perspective, the project is designed as a **modular monolith with pragmatic Ports & Adapters boundaries**:
 
-## Technologies
+* Discord is treated as an external interface.
+* Game rules remain independent from `discord.py`.
+* Application use cases orchestrate domain behavior.
+* PostgreSQL is accessed through repository abstractions.
+* Infrastructure can be replaced without moving business rules into adapters.
 
-* Python
-* discord.py
-* python-dotenv
-* pytest
-* JSON
+The application is containerized and runs permanently on Railway with managed PostgreSQL and automated deployment after successful CI.
 
-## Installation
+---
 
-Clone the repository:
+## Problem
 
-```bash
-git clone <repository-url>
-cd impostor-discord-bot
-```
+Running an Impostor game manually requires someone to coordinate several pieces of hidden state:
 
-Create and activate a virtual environment.
+* track participating players;
+* choose the impostor;
+* select a secret word;
+* privately distribute roles;
+* manage the lifecycle of the session.
 
-Example using `micromamba`:
+That coordinator should not gain information unavailable to the other players.
 
-```bash
-micromamba create -f environment.yml
-micromamba activate impostor-discord-bot-env
-```
+The bot automates this setup and acts as the neutral coordinator.
 
-## Discord Bot Setup
+The v2 rewrite also addresses a second problem: making that workflow reliable as software.
 
-Before running the project, you need to create and configure a Discord application.
+The application must support independent sessions, preserve active state across process restarts, isolate business rules from Discord, remain testable without external APIs, and run outside the developer machine.
 
-General steps:
+---
 
-1. Create an application in the Discord Developer Portal.
-2. Create a bot inside that application.
-3. Copy the bot token.
-4. Create a `.env` file in the project root.
-5. Add the bot token to the `.env` file.
-6. Generate the bot invitation URL.
-7. Invite the bot to your Discord server.
+## Features
 
-The `.env` file must contain:
+### Game lifecycle
 
-```env
-DISCORD_TOKEN=your_real_token_here
-```
+* Create a game with `/create`.
+* Join and leave through Discord buttons.
+* Start a game with `/start`.
+* Inspect the current session with `/status`.
+* Finish an active game with `/finish`.
+* Cancel a session with `/cancel`.
+* Prevent invalid lifecycle transitions.
 
-The project includes a `.env.example` file as a reference:
+### Player and role management
 
-```env
-DISCORD_TOKEN=place_your_token_here
-```
+* Prevent duplicate player registration.
+* Validate the minimum number of players before starting.
+* Select exactly one impostor.
+* Select a word from the configured static word provider.
+* Deliver roles privately through Discord DMs.
 
-When generating the bot invitation URL, enable the following scopes:
+### Session isolation and persistence
 
-* `bot`
-* `applications.commands`
+* Independent sessions by Discord guild and channel.
+* Process-local concurrency protection for simultaneous interactions.
+* PostgreSQL persistence for active games and players.
+* Recovery of active sessions after process restart.
+* Database constraints complement application-level validation.
 
-The bot also needs the required permissions to send messages, use slash commands, and send direct messages to players.
+### Engineering and operations
 
-## Running the Bot
+* Modular architecture with explicit ports and adapters.
+* Structured application logging.
+* Typed external configuration.
+* Unit, application, Discord-adapter, and PostgreSQL integration tests.
+* Ruff linting and mypy static type checking.
+* Dockerized application runtime.
+* Docker Compose development environment.
+* GitHub Actions Continuous Integration.
+* Railway production deployment.
+* Automatic deployment from `main` only after successful CI.
 
-The project uses a package-based structure inside the `src/` directory.
+---
 
-First, activate the virtual environment if needed:
+## Architecture
 
-```bash
-micromamba activate impostor-discord-bot-env
-```
-
-Then move into the `src` directory:
-
-```bash
-cd src
-```
-
-Run the bot as a module:
-
-```bash
-python -m impostor_bot.main
-```
-
-If the configuration is correct, the bot should appear online in Discord.
-
-## Basic Usage
-
-The main flow is:
-
-1. The host creates a game.
-2. The bot publishes a lobby in the channel.
-3. Players join using the **Join** button or the corresponding command.
-4. Players may leave before the game starts using the **Leave** button or the corresponding command.
-5. The host starts the game when there are at least 3 players.
-6. The bot selects a secret word and one impostor.
-7. The bot sends the roles by direct message.
-8. The lobby is closed and the game continues between the players.
-
-## Main Commands
-
-The bot uses slash commands grouped under `/impostor`.
-
-| Command            | Description                                            |
-| ------------------ | ------------------------------------------------------ |
-| `/impostor create` | Creates a new game in the current channel.             |
-| `/impostor join`   | Joins an open game.                                    |
-| `/impostor leave`  | Leaves a game before it starts.                        |
-| `/impostor status` | Shows the current game status.                         |
-| `/impostor start`  | Starts the game and sends the roles by direct message. |
-| `/impostor cancel` | Cancels an open game.                                  |
-| `/impostor help`   | Shows a quick usage guide.                             |
-
-The host is automatically added to the game when creating a lobby.
-
-## Secret Words
-
-Game words are stored in:
+The application keeps Discord and PostgreSQL outside the game rules.
 
 ```text
-data/words.json
+                     Discord
+                        │
+                        ▼
+              ┌─────────────────┐
+              │ Discord Adapter │
+              └────────┬────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │   Application   │
+              │    Use Cases    │
+              └────────┬────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │     Domain      │
+              │                 │
+              │ Game            │
+              │ Player          │
+              │ State / Rules   │
+              └────────┬────────┘
+                       │ ports
+               ┌───────┴───────┐
+               │               │
+               ▼               ▼
+      ┌────────────────┐ ┌────────────────┐
+      │   PostgreSQL   │ │ Word Provider  │
+      │   Repository   │ │     Static     │
+      └────────────────┘ └────────────────┘
 ```
 
-The file is organized by categories:
+At repository level, the main responsibilities are organized around:
 
-```json
-{
-  "general": [
-    "pizza",
-    "playa",
-    "perro"
-  ]
-}
+```text
+src/impostor_bot/
+├── application/      # use cases and application orchestration
+├── discord/          # Discord commands, views and interaction mapping
+├── game/             # domain model and game rules
+├── infrastructure/   # database and other external implementations
+├── ports/            # application/domain interfaces
+├── words/            # word-provider implementation
+├── config.py         # typed runtime configuration
+└── main.py           # application composition and startup
 ```
 
-To add or modify words, edit `data/words.json` while keeping a valid JSON format.
+The architecture is intentionally pragmatic rather than an attempt to reproduce every Clean Architecture convention.
+
+See [`docs/architecture.md`](docs/architecture.md) for the detailed architecture description.
+
+---
+
+## Game Lifecycle
+
+A game follows an explicit lifecycle.
+
+```text
+                   create
+                     │
+                     ▼
+                  WAITING
+                 /       \
+            start           cancel
+              │               │
+              ▼               ▼
+           STARTED        CANCELLED
+           /     \
+      finish       cancel
+        │             │
+        ▼             ▼
+    FINISHED       CANCELLED
+```
+
+While a game is waiting, players can join or leave.
+
+Starting requires enough registered players. Once started, the bot selects the impostor and secret word and privately distributes the corresponding information.
+
+Finishing or cancelling closes the active session.
+
+Active session information is persisted in PostgreSQL so recoverable games do not depend exclusively on process memory.
+
+See [`docs/game-flow.md`](docs/game-flow.md) for the detailed game flow.
+
+---
+
+## Technology Stack
+
+| Responsibility          | Technology            |
+| ----------------------- | --------------------- |
+| Language                | Python 3.12           |
+| Discord adapter         | `discord.py`          |
+| Database                | PostgreSQL            |
+| ORM / Data Mapper       | SQLAlchemy 2          |
+| Async PostgreSQL driver | `asyncpg`             |
+| Database migrations     | Alembic               |
+| Testing                 | pytest                |
+| Async testing           | pytest-asyncio        |
+| Coverage                | pytest-cov            |
+| Linting                 | Ruff                  |
+| Static type checking    | mypy                  |
+| Configuration           | Environment variables |
+| Containerization        | Docker                |
+| Local orchestration     | Docker Compose        |
+| Continuous Integration  | GitHub Actions        |
+| Deployment / CD         | Railway               |
+
+The application runtime is pinned to the Python version used by the project Docker and CI environments rather than relying on an unspecified system interpreter.
+
+---
+
+## Requirements
+
+### Recommended: Docker development
+
+* Docker
+* Docker Compose
+* A Discord application and bot token
+
+Docker Compose provides the application and PostgreSQL environment required for local execution.
+
+### Native Python development
+
+* Python 3.12
+* PostgreSQL
+* A Discord application and bot token
+* Project runtime/development dependencies
+
+The repository also includes environment and requirements files for local Python development, but Docker Compose is the shortest reproducible setup path.
+
+---
+
+## Local Development
+
+### 1. Configure the environment
+
+Copy `.env.example` to `.env` and provide the required local values.
+
+```env
+DISCORD_TOKEN=your_discord_bot_token
+DATABASE_URL=postgresql+asyncpg://user:password@postgres:5432/impostor
+LOG_LEVEL=INFO
+ENVIRONMENT=development
+```
+
+The example above contains placeholders only. Never commit the resulting `.env` file.
+
+### 2. Start the local stack
+
+```bash
+docker compose up --build
+```
+
+The Compose environment provides the PostgreSQL service, applies the database migrations, and starts the bot using the same application runtime used by the Dockerized deployment.
+
+To stop the stack:
+
+```bash
+docker compose down
+```
+
+Use a volume-removal command only when intentionally resetting local PostgreSQL data.
+
+---
+
+## Configuration
+
+Runtime configuration is external to the application.
+
+| Variable        | Required | Description                                    |
+| --------------- | -------: | ---------------------------------------------- |
+| `DISCORD_TOKEN` |      Yes | Token used to authenticate the Discord bot     |
+| `DATABASE_URL`  |      Yes | Async PostgreSQL connection URL                |
+| `LOG_LEVEL`     |       No | Application log level; defaults to `INFO`      |
+| `ENVIRONMENT`   |       No | Runtime environment; defaults to `development` |
+
+Supported environments are:
+
+```text
+development
+test
+production
+```
+
+Production credentials are managed by the deployment platform and are never stored in the repository.
+
+**Never commit `.env`, Discord tokens, PostgreSQL passwords, or production connection strings.**
+
+---
+
+## Database
+
+Persistent state is stored in PostgreSQL using SQLAlchemy 2 and the asynchronous `asyncpg` driver.
+
+A game session is identified by its Discord context:
+
+```text
+GameSessionKey
+├── guild_id
+└── channel_id
+```
+
+This allows sessions in different guilds or channels to remain isolated.
+
+Alembic is the source of truth for schema evolution.
+
+Apply the current schema with:
+
+```bash
+alembic upgrade head
+```
+
+Database tables must not be modified manually as part of normal development or deployment.
+
+Persistence is also part of the process-recovery strategy: when the bot starts, recoverable active sessions can be reconstructed from PostgreSQL instead of depending exclusively on in-memory state.
+
+---
 
 ## Testing
 
-The project includes basic automated tests for the core logic.
-
-The tests focus on areas that do not require a live Discord connection:
-
-* game session creation;
-* player registration;
-* duplicate player validation;
-* player removal;
-* minimum player validation;
-* impostor selection;
-* role generation;
-* game cancellation;
-* word loading from JSON;
-* category validation.
-
-Run the test suite from the project root:
-
-pytest
-
-## Project Structure
+Testing is organized around architectural boundaries rather than around Discord itself.
 
 ```text
-impostor-discord-bot/
-├── data/
-│   └── words.json
-├── docs/
-├── src/
-│   └── impostor_bot/
-│       ├── main.py
-│       ├── config.py
-│       ├── constants.py
-│       ├── discord/
-│       ├── game/
-│       └── words/
-├── tests/
-│   ├── test_game.py
-│   └── test_words.py
-├── .env.example
-├── .gitignore
-├── environment.yml
-├── pytest.ini
-├── README.md
-└── requirements.txt
+Domain unit tests
+        │
+        ▼
+Application tests
+        │
+        ▼
+Discord adapter tests
+        │
+        ▼
+PostgreSQL integration tests
+        │
+        ▼
+Controlled smoke validation
 ```
 
-The `src/impostor_bot/` directory contains the main bot code.
+### Run the complete test suite
 
-The internal structure separates:
+```bash
+pytest
+```
 
-* Discord integration;
-* game logic;
-* word loading;
-* configuration;
-* messages;
-* interactive views;
-* temporary game state.
+### Run tests without PostgreSQL integration tests
 
-The `tests/` directory contains automated tests for the core logic.
+```bash
+pytest -m "not integration"
+```
 
-## Additional Documentation
+### Run PostgreSQL integration tests
 
-Additional documentation is located in the `docs/` directory.
+```bash
+pytest -m integration
+```
 
-Some planned or related documents include:
+Integration tests require an available test PostgreSQL database.
 
-* `docs/commands.md`
-* `docs/game-flow.md`
-* `docs/rules.md`
-* `docs/words.md`
+### Quality checks
 
-## Current Scope
+The main local checks are:
 
-The bot only manages the setup phase of the game.
+```bash
+ruff check .
+mypy src/
+pytest
+```
 
-It includes:
+The project also provides a local quality gate:
 
-* creating a game;
-* registering players;
-* displaying a lobby;
-* allowing players to join or leave;
-* starting the game;
-* selecting a secret word;
-* selecting one impostor;
-* sending roles by direct message;
-* cancelling a game.
+```bash
+python scripts/quality.py
+```
 
-It does not include:
+GitHub Actions executes the automated CI chain before changes are accepted into `main`:
 
-* turn moderation;
-* timers;
-* clue registration;
-* voting system;
-* automatic winner declaration;
-* score tracking;
-* database persistence;
-* server-specific configuration.
+```text
+Install
+  ↓
+Ruff
+  ↓
+mypy
+  ↓
+Unit / non-integration tests
+  ↓
+PostgreSQL integration tests
+  ↓
+Docker build
+```
 
-## Possible Improvements
+The suite intentionally prioritizes meaningful coverage of domain behavior and critical integration paths rather than targeting an arbitrary 100% coverage number.
 
-* Allow word category selection from Discord.
-* Add support for multiple impostors.
-* Add server-specific configuration.
-* Add database persistence.
-* Add more automated tests for message builders and edge cases.
-* Add manual testing notes for Discord interactions.
+---
 
-## Credits
+## Docker
 
-Developed by Esteban Arenas.
+The project uses one production-oriented `Dockerfile` rather than maintaining a separate CI or deployment image definition.
 
-This project was built as part of a hands-on learning process in Python, discord.py, and modular application design. It was developed incrementally, prioritizing clarity, separation of responsibilities, and understanding of the bot’s internal flow.
+```text
+Dockerfile
+   │
+   └── application runtime
 
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/arenasesteban)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-%230A66C2.svg?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/esteban-arenas-álvarez-0813462a1) [![Gmail](https://img.shields.io/badge/Gmail-%23D44638.svg?style=for-the-badge&logo=gmail&logoColor=white)](mailto:esteban.arenas.az@gmail.com)
+Docker Compose
+   │
+   ├── PostgreSQL
+   ├── migrations
+   └── bot
+```
+
+The application image:
+
+* uses a pinned Python runtime;
+* runs as a non-root user;
+* keeps secrets outside the image;
+* installs version-controlled dependencies;
+* starts the bot as a non-interactive process.
+
+The same Dockerfile is validated by CI before a revision can become a production deployment candidate.
+
+---
+
+## Deployment
+
+Production is hosted on Railway with a managed PostgreSQL service.
+
+The deployment process is intentionally based on the same Dockerized application validated locally and in CI.
+
+```text
+Pull Request
+     │
+     ▼
+GitHub Actions CI
+     │
+     ▼
+Merge to main
+     │
+     ▼
+Railway detects new revision
+     │
+     ▼
+WAITING for CI on main
+     │
+     ▼
+CI successful
+     │
+     ▼
+Automatic Railway deployment
+     │
+     ▼
+Docker build
+     │
+     ▼
+Alembic pre-deploy migration
+     │
+     ▼
+Discord Bot + PostgreSQL
+```
+
+Production secrets and database credentials remain managed by Railway rather than GitHub Actions.
+
+The bot runs as a **single application instance**, matching the current process-local concurrency model.
+
+Rollback remains an explicit operational action. Application rollback is treated separately from PostgreSQL schema downgrade.
+
+---
+
+## Architecture Decisions
+
+The main architectural decisions behind v2.0.0 are:
+
+* **Modular monolith:** enough separation for the current scale without introducing unnecessary distributed-system complexity.
+* **Discord as an adapter:** Discord interactions translate external data into application use cases instead of containing game rules.
+* **PostgreSQL persistence:** active sessions survive process lifecycle events and database constraints protect persisted state.
+* **Single-instance concurrency:** per-session process-local locking is sufficient while horizontal scaling remains intentionally outside the v2.0 scope.
+
+Detailed decisions are documented under [`docs/adr/`](docs/adr/).
+
+---
+
+## Known Limitations
+
+The following are intentional v2.0.0 boundaries rather than unresolved architectural requirements:
+
+* The application assumes a single running bot instance.
+* Concurrency locks are process-local; distributed concurrency is not implemented.
+* Horizontal scaling is not supported.
+* Words are provided by the static word provider.
+* AI-generated words are not part of v2.0.0.
+* Discord remains the only user-facing interface; there is no administrative web dashboard.
+* The bot coordinates game setup and lifecycle but does not automate the complete social-deduction gameplay, voting, or scoring process.
+* Observability is intentionally limited to structured logging and platform-level runtime information.
+* Production database rollback is not automatically coupled to application rollback.
+
+These constraints keep the architecture aligned with the actual requirements of the project instead of introducing infrastructure without a demonstrated need.
+
+---
+
+## Documentation
+
+Additional project documentation is kept under `docs/`:
+
+* [`commands.md`](docs/commands.md) — Discord command reference.
+* [`game-flow.md`](docs/game-flow.md) — detailed game lifecycle and interactions.
+* [`rules.md`](docs/rules.md) — game rules and behavior.
+* [`words.md`](docs/words.md) — word-provider behavior and word data.
+* [`architecture.md`](docs/architecture.md) — technical architecture.
+* [`adr/`](docs/adr/) — architecture decision records.
+* [`current-state.md`](docs/current-state.md) — historical baseline captured before the v2.0 refactor.
+
+`current-state.md` is intentionally retained as historical documentation and should not be interpreted as the current v2 architecture.
+
+---
+
+## Roadmap
+
+### v2.0.0
+
+Production-ready backend evolution:
+
+```text
+modular architecture
+        +
+PostgreSQL persistence
+        +
+recovery
+        +
+automated testing
+        +
+Docker
+        +
+CI/CD
+        +
+persistent cloud deployment
+```
+
+### v2.1.0
+
+A potential next extension is an `AIWordProvider` implemented behind the existing word-provider port, without making AI a dependency of the game domain.
+
+### Future
+
+Additional game configuration or modes may be introduced when a concrete product requirement justifies them.
+
+The project intentionally avoids adding infrastructure or frameworks solely to increase the number of technologies in the stack.
+
+## Credits  
+
+Developed by Esteban Arenas.  
