@@ -1,6 +1,5 @@
 from impostor_bot.constants import STATUS_OPEN
 from impostor_bot.game.game import Game
-from impostor_bot.game.session import Session
 from impostor_bot.game.session_key import GameSessionKey
 from impostor_bot.game.state import GameState
 
@@ -20,7 +19,7 @@ def test_game_create_uses_waiting_initial_state():
 
 
 def test_session_remains_compatible_with_game():
-    game = Session(host_id=1)
+    game = Game.create(host_id=1)
 
     assert isinstance(game, Game)
 
