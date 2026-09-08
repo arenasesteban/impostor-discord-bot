@@ -8,6 +8,22 @@ The v2.0.0 architecture focuses on maintainability, explicit boundaries, recover
 
 ---
 
+## Live Demo
+
+A hosted instance of Discord Impostor Bot is available through a dedicated portfolio demo server.
+
+**[Try the live demo on Discord](https://discord.gg/dyYUrECBhw)**
+
+![Discord Impostor Bot demo](docs/assets/screenshot_live_demo.png)
+
+No local installation or Discord application configuration is required. Open one of the playground channels and use `/create` to interact with the deployed bot.
+
+A complete game requires multiple players. If you are visiting the demo alone, the server also includes a recorded walkthrough showing the complete flow from game creation and player registration to role delivery and game completion.
+
+The hosted instance has been functionally validated with independent and simultaneous sessions across multiple channels and Discord guilds. It is provided exclusively for **portfolio and demonstration purposes** and is not offered as a public scalable service or with availability guarantees.
+
+---
+
 ## Overview
 
 Discord Impostor Bot acts as a neutral coordinator for an Impostor game.
