@@ -1,24 +1,24 @@
 # Secret Words
 
-This document describes how **Impostor Discord Bot** loads, organizes, and uses secret words during a game.
+This document describes where **Discord Impostor Bot** gets its secret words, how the word data is organized, and how the available words are selected.
 
-Words are stored in an external JSON file to keep them separate from the bot's source code.
+v2.0.0 uses a static word catalogue stored outside the application source code.
 
 ## Words File
 
-Game words are stored in:
+Secret words are stored in:
 
 ```text
 data/words.json
 ```
 
-This file is located outside `src/` because it belongs to the project's configurable data.
+Keeping the word catalogue outside `src/` allows the available words to be maintained without modifying the application code.
 
-## Expected Format
+## Data Format
 
-The file must use valid JSON format.
+The file uses JSON.
 
-The expected structure is an object where each key represents a category, and each category contains a list of words.
+Its root object contains categories, and each category contains a list of available words.
 
 ```json
 {
@@ -40,55 +40,25 @@ The expected structure is an object where each key represents a category, and ea
 }
 ```
 
+Each category name acts as the key used to access its word list.
+
 ## Default Category
 
-Currently, the bot uses the category:
+The current default category is:
 
 ```text
 general
 ```
 
-This category is used when the host starts a game with:
+When no specific category is requested, words are selected from this category.
 
-```text
-/impostor start
-```
+Category selection is not currently exposed through the Discord interface.
 
-For now, the category cannot be selected from Discord. The bot gets a word from the default configured category.
+## Word Selection
 
-## File Rules
+A word is selected randomly from the requested category.
 
-| Rule                              | Description                                              |
-| --------------------------------- | -------------------------------------------------------- |
-| The file must exist               | The bot expects to find `data/words.json`.               |
-| The file must be valid JSON       | A formatting error prevents the words from being loaded. |
-| The default category must exist   | The `general` category is currently expected.            |
-| Each category must contain a list | Words must be stored inside a JSON list.                 |
-| Lists must not be empty           | An empty category does not allow the game to start.      |
-| Words must be text                | Each word must be written as a string.                   |
-
-## Usage During a Game
-
-When this command is executed:
-
-```text
-/impostor start
-```
-
-the bot performs the following process:
-
-1. loads `data/words.json`;
-2. looks for the default category;
-3. gets the list of available words;
-4. selects a random word;
-5. sends that word to regular players by direct message;
-6. selects one impostor, who does not receive the secret word.
-
-The secret word is never shown in the public channel.
-
-## Selection Example
-
-If the file contains:
+For example, given:
 
 ```json
 {
@@ -100,19 +70,17 @@ If the file contains:
 }
 ```
 
-the bot may randomly select a word such as:
+a selection may return:
 
 ```text
 pizza
 ```
 
-Regular players receive that word by direct message.
+Each selection must return one of the words available in that category.
 
-The impostor receives a message indicating that they are the impostor, but does not know the secret word.
+## Adding Words
 
-## Editing the File
-
-To add new words, edit `data/words.json` and add items to the corresponding category.
+To add words, edit `data/words.json` and append them to the appropriate category.
 
 ```json
 {
@@ -126,11 +94,11 @@ To add new words, edit `data/words.json` and add items to the corresponding cate
 }
 ```
 
-After modifying the file, save the changes and restart the bot if it is already running.
+Keep the existing category structure and ensure the resulting file remains valid JSON.
 
-## Additional Categories
+## Adding Categories
 
-The file can contain more than one category.
+Additional categories can be added to the same file.
 
 ```json
 {
@@ -147,56 +115,49 @@ The file can contain more than one category.
 }
 ```
 
-As long as the bot does not have an option to choose a category from Discord, it will continue using the default category.
+Adding a category to the file does not automatically expose it as a selectable option in Discord.
 
-## Handled Errors
+The bot continues using the default category unless another category is explicitly requested by the application.
 
-| Case                        | Expected Result                                               |
-| --------------------------- | ------------------------------------------------------------- |
-| The file does not exist     | The bot reports that the words file was not found.            |
-| The file is empty           | The bot reports that there is no valid data.                  |
-| The JSON format is invalid  | The bot cannot load the words.                                |
-| The category does not exist | The bot reports that the requested category is not available. |
-| The category is empty       | The bot reports that there are no available words.            |
+## Data Requirements
 
-If one of these errors occurs, the game should not start.
+The word catalogue must satisfy the following conditions:
+
+| Requirement        | Description                                         |
+| ------------------ | --------------------------------------------------- |
+| File exists        | `data/words.json` must be available                 |
+| Valid JSON         | The file must be parseable as JSON                  |
+| Object root        | The JSON root must contain the category mapping     |
+| Category exists    | A requested category must exist                     |
+| Non-empty category | A category must contain at least one available word |
+
+If the word catalogue cannot provide a valid word, word selection fails instead of returning an invalid value.
+
+## Common Failure Cases
+
+| Case                               | Result                                     |
+| ---------------------------------- | ------------------------------------------ |
+| Words file is missing              | Words cannot be loaded                     |
+| Words file contains no usable data | Words cannot be loaded                     |
+| JSON structure is invalid          | Words cannot be loaded correctly           |
+| Requested category does not exist  | No word can be selected from that category |
+| Requested category is empty        | No word can be selected                    |
+
+These failures are handled by the word-loading/provider boundary rather than by returning arbitrary fallback words.
 
 ## Recommendations
 
-To keep the file organized:
+When maintaining the catalogue:
 
-* use short words that are easy to relate to;
-* avoid overly specific words;
-* avoid concepts that are too difficult for the group;
-* check that the JSON does not have punctuation errors;
-* keep enough words in the `general` category;
-* group words by category if the bot is expanded later.
+* prefer familiar words that players can describe indirectly;
+* avoid unnecessarily obscure or highly specialized terms;
+* avoid duplicate entries where possible;
+* keep categories semantically coherent;
+* maintain enough variety in the `general` category;
+* validate the JSON after large edits.
 
-## Complete Example
+## Related Documentation
 
-```json
-{
-  "general": [
-    "pizza",
-    "beach",
-    "dog",
-    "hospital",
-    "airplane",
-    "school",
-    "mountain",
-    "cinema"
-  ],
-  "food": [
-    "burger",
-    "sushi",
-    "empanada",
-    "ice cream"
-  ],
-  "places": [
-    "library",
-    "stadium",
-    "supermarket",
-    "airport"
-  ]
-}
-```
+* [`rules.md`](rules.md) describes the game rules involving secret information.
+* [`game-flow.md`](game-flow.md) describes when word selection occurs during a game.
+* [`architecture.md`](architecture.md) describes the technical word-provider boundary.

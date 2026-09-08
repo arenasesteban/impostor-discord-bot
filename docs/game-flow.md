@@ -1,22 +1,23 @@
 # Game Flow
 
-This document describes the main usage flow of **Impostor Discord Bot** during a game.
+This document describes how a typical game progresses in **Discord Impostor Bot**, from creating the lobby to closing the session.
 
-The bot only manages the setup phase of the game: it creates the lobby, registers players, selects a secret word, chooses one impostor, and sends the roles by direct message.
-
-After that, the game continues between the players.
+The bot coordinates the game setup and session lifecycle. The social part of the game—giving clues, discussing suspects, voting, and deciding the winner—takes place between the players.
 
 ## Flow Summary
 
 ```text
 /impostor create
-→ players join with Join or /impostor join
+→ players join the lobby
 → optionally check /impostor status
-→ the host runs /impostor start
-→ the bot sends roles by DM
-→ the lobby is closed
-→ the game continues between the players
+→ host runs /impostor start
+→ roles are sent by DM
+→ players conduct the game
+→ host runs /impostor finish
+→ session ends
 ```
+
+A game may also be cancelled by the host instead of reaching the normal finish.
 
 ## 1. Create a Game
 
@@ -26,78 +27,71 @@ A game begins when a user runs:
 /impostor create
 ```
 
-That user is registered as the host of the game and is also automatically added as a player.
+The user becomes the host and is automatically added as the first player.
 
-The bot publishes a lobby in the channel with:
+The bot publishes a lobby in the current channel showing the game information and the available registration controls:
 
-* game status;
-* host;
-* number of joined players;
-* player list;
-* `Join` button;
-* `Leave` button;
-* useful commands for the host.
+```text
+Join | Leave
+```
 
-Only one active game can exist per channel.
+From this point, other players can enter the lobby.
 
 ## 2. Join the Game
 
-Players can join while the game is open.
+Players can join through either:
 
-There are two ways to do this:
+| Option           | Action                        |
+| ---------------- | ----------------------------- |
+| `Join` button    | Joins directly from the lobby |
+| `/impostor join` | Joins through the command     |
 
-| Option           | Action                           |
-| ---------------- | -------------------------------- |
-| `Join` button    | Adds the user from the lobby.    |
-| `/impostor join` | Adds the user through a command. |
+After a successful join:
 
-When a user joins successfully:
+```text
+player joins
+→ player list changes
+→ lobby is updated
+→ player receives confirmation
+```
 
-* the user is added to the player list;
-* the lobby is updated;
-* the user receives a confirmation visible only to them.
-
-The host does not need to join, because they are automatically registered when creating the game.
+Multiple players can continue joining until the host is ready to start.
 
 ## 3. Leave the Game
 
-Before the game starts, a joined player can leave.
+A player who joined the lobby may leave before the game starts.
 
-There are two ways to do this:
+They can use:
 
-| Option            | Action                              |
-| ----------------- | ----------------------------------- |
-| `Leave` button    | Removes the user from the lobby.    |
-| `/impostor leave` | Removes the user through a command. |
+| Option            | Action                         |
+| ----------------- | ------------------------------ |
+| `Leave` button    | Leaves directly from the lobby |
+| `/impostor leave` | Leaves through the command     |
 
-When a user leaves successfully:
-
-* the user is removed from the player list;
-* the lobby is updated;
-* the user receives a confirmation visible only to them.
-
-The host cannot leave the game. To close the lobby, the host must use:
+After a successful leave:
 
 ```text
-/impostor cancel
+player leaves
+→ player list changes
+→ lobby is updated
+→ player receives confirmation
 ```
+
+The lobby remains available for the remaining players.
 
 ## 4. Check the Game Status
 
-At any time before starting, users can check the status with:
+Players can inspect the current session with:
 
 ```text
 /impostor status
 ```
 
-The bot shows:
+The bot shows the current game information, including the host and registered players.
 
-* current status;
-* host;
-* number of joined players;
-* player list.
+This can be used before starting to confirm that the lobby is ready.
 
-This command is useful for confirming who has joined before starting.
+It can also be used while the game remains active after starting.
 
 ## 5. Start the Game
 
@@ -107,126 +101,174 @@ When the group is ready, the host runs:
 /impostor start
 ```
 
-To start correctly, these conditions must be met:
+The bot prepares the game by:
 
-* an open game must exist;
-* the user running the command must be the host;
-* at least 3 players must be joined;
-* at least one word must be available in the words file.
+1. selecting a secret word;
+2. selecting one player as the impostor;
+3. preparing one private role for every player;
+4. sending the roles through direct messages.
 
-When the game starts, the bot performs these actions:
+If role delivery succeeds, the bot announces that the game has started and closes the registration controls in the lobby.
 
-1. gets a secret word from `data/words.json`;
-2. randomly selects one impostor;
-3. generates the roles for all players;
-4. sends direct messages to each player;
-5. informs the channel that the game has started;
-6. visually closes the lobby;
-7. disables the buttons;
-8. removes the active game from memory.
+The game then moves from lobby preparation to the social gameplay stage.
 
-The public channel does not show the secret word or who the impostor is.
+## 6. Receive Roles by Direct Message
 
-## 6. Receive the Role by Direct Message
+Each player receives their role privately.
 
-Once the game starts, each player receives a direct message.
+| Player Type    | Received Information                                                        |
+| -------------- | --------------------------------------------------------------------------- |
+| Regular player | Receives the secret word                                                    |
+| Impostor       | Is informed that they are the impostor but does not receive the secret word |
 
-| Player Type    | Received Information                                                                            |
-| -------------- | ----------------------------------------------------------------------------------------------- |
-| Regular player | Receives the secret word.                                                                       |
-| Impostor       | Receives a message indicating that they are the impostor, but does not receive the secret word. |
+The public channel does not reveal the secret word or the identity of the impostor.
 
-Regular players should say a word related to the secret word while avoiding making it too obvious.
+Once the roles have been delivered, the players have the information required to begin playing.
 
-The impostor should listen to the other players' clues and try to blend in.
+## 7. Play the Game
 
-## 7. Continue the Game Outside the Bot
+The social game now takes place between the players.
 
-After distributing the roles, the bot finishes its participation.
+A typical round may look like:
 
-From that moment on, the players continue the game on their own:
+```text
+players give clues
+→ players observe each other's answers
+→ group discusses suspicions
+→ players vote
+→ group determines the result
+```
 
-1. each player says a related word;
-2. players try to identify the impostor;
-3. the impostor tries to avoid suspicion;
-4. the group votes for who they think the impostor is;
-5. the result is decided by the players.
+The bot does not control turns, evaluate clues, collect votes, or decide the winner.
 
-The bot does not control this stage.
+The Discord session nevertheless remains active until the host explicitly finishes or cancels it.
 
-## 8. Cancel a Game
+## 8. Finish the Game
 
-If the host decides not to continue, they can cancel the game before starting it by using:
+After the players have completed the game, the host closes the session with:
+
+```text
+/impostor finish
+```
+
+The bot then:
+
+```text
+game completed by players
+→ host runs /impostor finish
+→ lobby is marked as finished
+→ session ends
+```
+
+After the session has ended, another game can be created in the same channel.
+
+## 9. Cancel a Game
+
+The host may decide to stop the session instead of completing the normal flow.
+
+Cancellation is performed with:
 
 ```text
 /impostor cancel
 ```
 
-When cancelled:
+A game can be cancelled while players are still preparing the lobby or after the game has already started.
 
-* the lobby is marked as cancelled;
-* the buttons are disabled;
-* the game is removed from the bot's memory;
-* players can no longer join or leave that game.
+The resulting flow is:
 
-Only the host can cancel a game.
+```text
+active game
+→ host runs /impostor cancel
+→ lobby is marked as cancelled
+→ session ends
+```
+
+---
 
 ## Alternative Flows
 
 ### Player Leaves Before Starting
 
 ```text
-Open game
-→ player presses Leave or uses /impostor leave
-→ the bot removes the player
-→ the lobby is updated
-→ the game remains open
+lobby open
+→ player uses Leave or /impostor leave
+→ player is removed
+→ lobby is updated
+→ remaining players continue preparing
 ```
 
-### Host Cancels
+### Host Cancels Before Starting
 
 ```text
-Open game
-→ host uses /impostor cancel
-→ the bot visually closes the lobby
-→ the buttons are disabled
-→ the game is no longer available
+lobby open
+→ host runs /impostor cancel
+→ lobby is closed
+→ session ends
 ```
 
-### Direct Messages Disabled
+### Host Cancels After Starting
 
-The bot may be unable to send direct messages to one or more players.
+```text
+roles already delivered
+→ game is in progress
+→ host runs /impostor cancel
+→ session is cancelled
+```
 
-This usually happens when a user has disabled direct messages from server members.
+### Direct Message Delivery Fails
 
-In that case, the bot reports the issue and the game does not continue normally. Players must enable direct messages and create a new game.
+The bot may be unable to deliver a role to one or more players.
+
+In that case:
+
+```text
+host starts game
+→ bot attempts role delivery
+→ one or more deliveries fail
+→ game does not continue
+→ session is cancelled
+```
+
+The affected players are reported so the group can correct the problem before creating another game.
+
+---
 
 ## Private Information
 
-During the game flow, the bot never publicly shows:
+During the game flow, the bot does not publicly reveal:
 
 * the secret word;
-* who the impostor is.
+* the identity of the impostor.
 
-That information is only delivered by direct message to the corresponding players.
+Role information is delivered privately to the corresponding players.
 
-## Bot Responsibility
+---
 
-The bot is responsible for:
+## Flow Boundaries
 
-* creating the lobby;
-* registering players;
-* updating the participant list;
-* selecting the secret word;
-* selecting the impostor;
-* sending roles by direct message;
-* closing the lobby when the game starts or is cancelled.
+The bot coordinates:
 
-The bot is not responsible for:
+```text
+lobby
+→ registration
+→ role distribution
+→ active session
+→ session closure
+```
 
-* controlling turns;
-* moderating the words spoken by players;
-* receiving votes;
-* declaring winners;
-* tracking scores;
-* saving game history.
+The players conduct:
+
+```text
+clues
+→ discussion
+→ voting
+→ result
+```
+
+---
+
+## Related Documentation
+
+* [`commands.md`](commands.md) — how to use the bot commands.
+* [`rules.md`](rules.md) — game restrictions and allowed actions.
+* [`words.md`](words.md) — secret-word behavior.
